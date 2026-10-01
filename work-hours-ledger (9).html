@@ -1,0 +1,2798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Work hours ledger</title>
+<style>
+  :root{
+    --paper:#faf7f0;
+    --paper-line:#e4ddc9;
+    --ink:#2b2a25;
+    --ink-soft:#6b6656;
+    --ink-faint:#a39d88;
+    --rule:#d8d0b8;
+    --accent:#3c6e5a;
+    --accent-soft:#e7efe9;
+    --accent-line:#bcd4c7;
+    --danger:#a33b2d;
+    --danger-soft:#f5e6e1;
+    --serif:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px);
+    background-size: 100% 42px;
+    background-position: 0 128px;
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:14px;
+    line-height:1.5;
+    padding-bottom:80px;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px;}
+
+  header{
+    padding:36px 0 22px;
+    border-bottom:2px solid var(--ink);
+    margin-bottom:28px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:16px;
+  }
+  header h1{
+    font-family:var(--serif);
+    font-weight:400;
+    font-size:30px;
+    margin:0;
+    letter-spacing:0.2px;
+  }
+  header .sub{color:var(--ink-soft);font-size:13px;margin-top:4px;}
+  .settings-toggle{
+    background:none;border:1px solid var(--ink-faint);color:var(--ink-soft);
+    border-radius:2px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:var(--sans);
+  }
+  .settings-toggle:hover{border-color:var(--ink);color:var(--ink);}
+
+  .settings-panel{
+    display:none;
+    background:var(--accent-soft);
+    border:1px solid var(--accent-line);
+    border-radius:3px;
+    padding:18px 20px;
+    margin-bottom:28px;
+  }
+  .settings-panel.open{display:flex;gap:28px;flex-wrap:wrap;}
+  .settings-panel label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:4px;}
+  .settings-panel input, .settings-panel select{
+    font-family:var(--mono);font-size:14px;padding:6px 8px;border:1px solid var(--rule);
+    border-radius:2px;background:#fff;width:120px;
+  }
+  .settings-panel .toggle-row{
+    display:flex;align-items:center;gap:8px;cursor:pointer;max-width:220px;margin-top:2px;
+  }
+  .settings-panel .toggle-row input[type="checkbox"]{
+    width:16px;height:16px;flex:none;accent-color:var(--accent);cursor:pointer;
+  }
+  .settings-panel .toggle-row .hint{
+    font-size:11px;color:var(--ink-soft);font-family:var(--sans);line-height:1.4;
+  }
+
+  .workplaces-block{flex-basis:100%;width:100%;margin-top:6px;}
+  .workplaces-label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:8px;}
+  .workplace-item{
+    display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--rule);
+    border-radius:3px;padding:8px 12px;margin-bottom:6px;
+  }
+  .workplace-item .wp-name{font-family:var(--serif);font-size:14px;color:var(--ink);flex:1;min-width:0;}
+  .workplace-item .wp-detail{
+    font-family:var(--mono);font-size:12px;color:var(--ink-soft);white-space:nowrap;
+  }
+  .workplace-item .wp-actions{display:flex;gap:4px;flex:none;}
+  .add-workplace-btn{
+    background:none;border:1px dashed var(--ink-faint);color:var(--ink-soft);
+    border-radius:3px;padding:8px 14px;font-size:12px;cursor:pointer;font-family:var(--sans);
+    width:100%;text-align:center;
+  }
+  .add-workplace-btn:hover{border-color:var(--ink);color:var(--ink);border-style:solid;}
+  .workplace-form{
+    display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;padding-top:14px;
+    border-top:1px dashed var(--accent-line);
+  }
+  .workplace-form .field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:4px;}
+  .workplace-form .field input, .workplace-form .field select{
+    font-family:var(--mono);font-size:14px;padding:6px 8px;border:1px solid var(--rule);
+    border-radius:2px;background:#fff;width:140px;
+  }
+  .workplace-warning{
+    flex-basis:100%;width:100%;color:var(--danger);font-size:12px;font-weight:500;display:none;
+  }
+  .workplace-warning.show{display:block;}
+  .workplace-form-actions{display:flex;gap:10px;flex-wrap:wrap;flex-basis:100%;width:100%;}
+  .workplace-form-actions button{
+    background:var(--ink);color:var(--paper);border:none;border-radius:2px;
+    padding:9px 16px;font-size:13px;cursor:pointer;font-family:var(--sans);
+  }
+  .workplace-form-actions button:hover{background:var(--accent);}
+  .workplace-form-actions .cancel-edit-btn{
+    background:none;color:var(--ink-soft);border:1px solid var(--ink-faint);
+  }
+  .workplace-form-actions .cancel-edit-btn:hover{background:none;border-color:var(--ink);color:var(--ink);}
+
+  .tabs{
+    display:flex;
+    gap:2px;
+    margin-bottom:28px;
+    border-bottom:1px solid var(--rule);
+  }
+  .tab-btn{
+    background:none;border:none;cursor:pointer;
+    font-family:var(--serif);font-size:15px;color:var(--ink-soft);
+    padding:9px 4px;margin-right:22px;
+    border-bottom:2px solid transparent;
+    position:relative;top:1px;
+  }
+  .tab-btn.active{color:var(--ink);border-bottom-color:var(--accent);}
+  .tab-btn:hover{color:var(--ink);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  form.wish-form{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap:10px;
+    margin-bottom:34px;
+    align-items:end;
+  }
+  form.wish-form .field{min-width:0;}
+  form.wish-form .field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:4px;overflow-wrap:break-word;}
+  form.wish-form input{
+    width:100%;min-width:0;height:38px;box-sizing:border-box;font-family:var(--mono);font-size:13px;padding:0 9px;
+    border:1px solid var(--rule);border-radius:2px;background:#fff;color:var(--ink);
+  }
+  form.wish-form input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+  form.wish-form button{
+    background:var(--ink);color:var(--paper);border:none;border-radius:2px;
+    padding:9px 16px;font-size:13px;cursor:pointer;font-family:var(--sans);height:37px;
+  }
+  form.wish-form button:hover{background:var(--accent);}
+  form.entry-form .cancel-edit-btn, form.wish-form .cancel-edit-btn{
+    background:none;color:var(--ink-soft);border:1px solid var(--ink-faint);
+  }
+  form.entry-form .cancel-edit-btn:hover, form.wish-form .cancel-edit-btn:hover{
+    background:none;border-color:var(--ink);color:var(--ink);
+  }
+
+  .wish-card{
+    display:grid;
+    grid-template-columns: auto 1.8fr 0.9fr 1.1fr auto;
+    align-items:center;
+    gap:10px;
+    padding:14px 10px;
+    border-bottom:1px solid var(--rule);
+  }
+  .wish-card.purchased .w-name{color:var(--ink-faint);text-decoration:line-through;}
+  .wish-card .w-check{cursor:pointer;width:16px;height:16px;accent-color:var(--accent);}
+  .wish-card .w-name{font-family:var(--serif);font-size:15px;}
+  .wish-card .w-name a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--ink-faint);}
+  .wish-card .w-name a:hover{border-color:var(--ink);}
+  .wish-card .w-price{font-family:var(--mono);text-align:right;}
+  .wish-card .w-hours{font-family:var(--mono);text-align:right;color:var(--accent);}
+  .wish-card .w-hours .tag{display:block;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-faint);margin-bottom:2px;}
+  .wish-actions{display:flex;align-items:center;gap:4px;}
+  .wish-empty{color:var(--ink-faint);font-style:italic;font-family:var(--serif);padding:30px 0;text-align:center;}
+  .rate-note{font-size:12px;color:var(--ink-faint);margin:-10px 0 22px;}
+
+  .wishlist-privacy-row{
+    display:flex;align-items:center;gap:8px;margin:-8px 0 20px;font-size:13px;color:var(--ink-soft);
+  }
+  .wishlist-privacy-row input[type="checkbox"]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;}
+  .wishlist-privacy-row label{cursor:pointer;}
+
+  .wishlist-header-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .share-btn{
+    background:none;border:1px solid var(--ink-faint);color:var(--ink-soft);
+    border-radius:2px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:var(--sans);
+  }
+  .share-btn:hover{border-color:var(--ink);color:var(--ink);}
+
+  .public-wrap{max-width:600px;margin:60px auto;padding:0 24px;text-align:center;}
+  .public-message{
+    font-family:var(--serif);font-size:20px;color:var(--ink-soft);margin-top:80px;
+  }
+  .public-title{font-family:var(--serif);font-size:26px;color:var(--ink);margin-bottom:6px;}
+  .public-sub{color:var(--ink-soft);font-size:13px;margin-bottom:30px;}
+  .public-wish-card{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 16px;border:1px solid var(--rule);border-radius:4px;margin-bottom:10px;
+    background:#fff;text-align:left;
+  }
+  .public-wish-card .w-name{font-family:var(--serif);font-size:15px;}
+  .public-wish-card .w-name a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--ink-faint);}
+  .public-wish-card .w-name a:hover{border-color:var(--ink);}
+  .public-wish-card .w-price{font-family:var(--mono);color:var(--ink-soft);white-space:nowrap;margin-left:14px;}
+
+  .summary{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--ink);
+    border:1px solid var(--ink);
+    margin-bottom:32px;
+  }
+  .summary .cell{
+    background:var(--paper);
+    padding:16px 18px;
+  }
+  .summary .cell .label{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-soft);margin-bottom:6px;}
+  .summary .cell .value{font-family:var(--mono);font-size:22px;}
+  .summary .cell.money .value{color:var(--accent);}
+
+  .panel-title{
+    font-family:var(--serif);
+    font-size:18px;
+    margin:0 0 14px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+  }
+  .panel-title .hint{font-size:12px;color:var(--ink-faint);font-family:var(--sans);}
+
+  form.entry-form{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap:10px;
+    margin-bottom:34px;
+    align-items:end;
+  }
+  form.entry-form .field{min-width:0;}
+  form.entry-form .field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:4px;overflow-wrap:break-word;}
+  form.entry-form input, form.entry-form select{
+    width:100%;
+    min-width:0;
+    height:38px;
+    box-sizing:border-box;
+    -webkit-appearance:none;
+    appearance:none;
+    font-family:var(--mono);
+    font-size:13px;
+    padding:0 9px;
+    border:1px solid var(--rule);
+    border-radius:2px;
+    background:#fff;
+    color:var(--ink);
+  }
+  form.entry-form input:focus, form.entry-form select:focus{
+    outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);
+  }
+  form.entry-form button{
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    border-radius:2px;
+    padding:9px 16px;
+    font-size:13px;
+    cursor:pointer;
+    font-family:var(--sans);
+    height:37px;
+  }
+  form.entry-form button:hover{background:var(--accent);}
+  .error-msg{grid-column:1/-1;color:var(--danger);font-size:12px;display:none;margin-top:-4px;}
+  .error-msg.show{display:block;}
+
+  table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+  thead th{
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--ink-soft);
+    padding:0 10px 8px;
+    border-bottom:2px solid var(--ink);
+    font-weight:400;
+  }
+  thead th.num{text-align:right;}
+  tbody td{
+    padding:11px 10px;
+    border-bottom:1px solid var(--rule);
+    vertical-align:top;
+  }
+  tbody tr:hover{background:rgba(60,110,90,0.05);}
+  td.num{text-align:right;font-family:var(--mono);}
+  td.date{font-family:var(--mono);white-space:nowrap;}
+  td.job{color:var(--ink);}
+  td.notes{color:var(--ink-soft);font-size:13px;max-width:220px;}
+  .pay{color:var(--accent);font-weight:500;}
+  .travel{color:var(--danger);font-weight:500;}
+  .travel-reimbursed{color:var(--ink);font-weight:500;}
+  .total{color:var(--ink);font-weight:700;}
+  .del-btn{
+    background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:15px;
+    padding:2px 6px;line-height:1;
+  }
+  .del-btn:hover{color:var(--danger);}
+  .edit-btn{
+    background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:13px;
+    padding:2px 6px;line-height:1;
+  }
+  .edit-btn:hover{color:var(--accent);}
+  .empty-row td{
+    text-align:center;color:var(--ink-faint);padding:40px 0;font-style:italic;font-family:var(--serif);
+  }
+
+  .month-group{
+    margin-top:6px;
+  }
+  .month-header{
+    display:flex;
+    justify-content:space-between;
+    padding:14px 10px 6px;
+    font-family:var(--serif);
+    font-size:15px;
+    color:var(--ink);
+    border-bottom:1px solid var(--ink-faint);
+    margin-top:18px;
+  }
+  .month-header .agg{font-family:var(--mono);font-size:13px;color:var(--ink-soft);}
+  .month-header .agg b{color:var(--accent);font-weight:500;}
+
+  .footer-actions{
+    display:flex;justify-content:flex-end;gap:10px;margin-top:8px;
+  }
+  .footer-actions button{
+    background:none;border:1px solid var(--ink-faint);color:var(--ink-soft);
+    border-radius:2px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:var(--sans);
+  }
+  .footer-actions button:hover{border-color:var(--ink);color:var(--ink);}
+
+  .history-empty{color:var(--ink-faint);font-size:13px;padding:10px 2px;}
+  .history-group{
+    border:1px solid var(--rule);border-radius:4px;margin-bottom:10px;background:#fff;overflow:hidden;
+  }
+  .history-toggle{
+    width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:none;border:none;cursor:pointer;text-align:left;
+    padding:14px 16px;font-family:var(--serif);font-size:15px;color:var(--ink);
+  }
+  .history-toggle:hover{background:var(--accent-soft);}
+  .history-toggle .agg{font-family:var(--mono);font-size:13px;color:var(--ink-soft);font-family:var(--sans);}
+  .history-toggle .agg b{color:var(--ink);font-family:var(--mono);font-weight:700;}
+  .history-toggle .chev{
+    font-family:var(--sans);color:var(--ink-faint);transition:transform 0.15s ease;flex:none;
+  }
+  .history-group.open .chev{transform:rotate(90deg);}
+  .history-detail{
+    display:none;border-top:1px solid var(--rule);padding:4px 10px 12px;
+  }
+  .history-group.open .history-detail{display:block;}
+  .history-detail table{margin-top:6px;}
+
+  .planner-toolbar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    margin-bottom:18px;
+  }
+  .planner-week-nav{display:flex;align-items:center;gap:10px;}
+  .planner-week-nav button{
+    background:none;border:1px solid var(--ink-faint);color:var(--ink-soft);
+    border-radius:2px;padding:6px 12px;font-size:13px;cursor:pointer;font-family:var(--sans);
+  }
+  .planner-week-nav button:hover{border-color:var(--ink);color:var(--ink);}
+  .planner-week-label{font-family:var(--serif);font-size:15px;color:var(--ink);}
+  .planner-week-total{font-family:var(--mono);font-size:13px;color:var(--ink-soft);}
+  .planner-week-total b{color:var(--accent);font-weight:700;}
+  .planner-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .planner-day{
+    background:#fff;border:1px solid var(--rule);border-radius:4px;
+    padding:10px;display:flex;flex-direction:column;gap:8px;min-height:120px;
+  }
+  .planner-day.is-today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-line);}
+  .planner-day-head{display:flex;justify-content:space-between;align-items:baseline;}
+  .planner-day-name{font-family:var(--serif);font-size:14px;color:var(--ink);}
+  .planner-day-date{font-family:var(--mono);font-size:11px;color:var(--ink-faint);}
+  .planner-day-total{font-family:var(--mono);font-size:11px;color:var(--accent);}
+  .planner-block{
+    background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:3px;
+    padding:6px 8px;font-size:12px;position:relative;
+  }
+  .planner-block .pb-time{font-family:var(--mono);color:var(--ink);display:block;}
+  .planner-block .pb-label{color:var(--ink-soft);display:block;margin-top:1px;overflow-wrap:break-word;}
+  .planner-block .pb-del{
+    position:absolute;top:2px;right:4px;background:none;border:none;color:var(--ink-faint);
+    cursor:pointer;font-size:13px;line-height:1;padding:2px;
+  }
+  .planner-block .pb-del:hover{color:var(--danger);}
+  .planner-add-btn{
+    background:none;border:1px dashed var(--ink-faint);color:var(--ink-soft);
+    border-radius:3px;padding:6px 8px;font-size:11px;cursor:pointer;font-family:var(--sans);
+    text-align:center;
+  }
+  .planner-add-btn:hover{border-color:var(--ink);color:var(--ink);border-style:solid;}
+  .planner-inline-form{display:flex;flex-direction:column;gap:6px;}
+  .planner-inline-form input{
+    font-family:var(--mono);font-size:12px;padding:5px 6px;border:1px solid var(--rule);
+    border-radius:2px;background:#fff;color:var(--ink);width:100%;box-sizing:border-box;
+  }
+  .planner-inline-form .pf-actions{display:flex;gap:6px;}
+  .planner-inline-form .pf-actions button{
+    flex:1;font-size:11px;padding:5px 6px;border-radius:2px;cursor:pointer;font-family:var(--sans);
+    border:1px solid var(--ink-faint);background:none;color:var(--ink-soft);
+  }
+  .planner-inline-form .pf-actions button.pf-save{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .planner-inline-form .pf-actions button.pf-save:hover{background:var(--accent);border-color:var(--accent);}
+  .planner-inline-form .pf-actions button:not(.pf-save):hover{border-color:var(--ink);color:var(--ink);}
+
+  .school-add-btn{
+    background:none;border:1px dashed var(--ink-faint);color:var(--ink-soft);
+    border-radius:3px;padding:6px 8px;font-size:11px;cursor:pointer;font-family:var(--sans);
+    text-align:center;
+  }
+  .school-add-btn:hover{border-color:var(--ink);color:var(--ink);border-style:solid;}
+
+  .bus-item{
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    background:#fff;border:1px solid var(--rule);border-radius:3px;
+    padding:10px 12px;margin-bottom:8px;
+  }
+  .bus-item .bus-label{font-family:var(--serif);font-size:14px;color:var(--ink);flex:1;min-width:110px;}
+  .bus-item .bus-times{font-family:var(--mono);font-size:12px;color:var(--ink-soft);white-space:nowrap;}
+  .bus-item .bus-times b{color:var(--accent);}
+  .bus-item .bus-note{font-size:12px;color:var(--ink-faint);flex-basis:100%;}
+  .bus-item .bus-actions{display:flex;gap:4px;flex:none;}
+  .bus-empty{color:var(--ink-faint);font-style:italic;font-family:var(--serif);padding:20px 0;text-align:center;}
+
+  .import-panel{
+    background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:4px;
+    padding:18px 20px;margin-bottom:34px;
+  }
+  .import-panel .panel-title{margin-bottom:10px;}
+  .import-panel .field{margin-bottom:12px;max-width:320px;}
+  .import-panel .field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:4px;}
+  .import-panel .field input{
+    width:100%;font-family:var(--mono);font-size:13px;padding:8px 10px;box-sizing:border-box;
+    border:1px solid var(--rule);border-radius:2px;background:#fff;color:var(--ink);
+  }
+  .import-panel .field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+  .import-textarea{
+    width:100%;font-family:var(--mono);font-size:13px;padding:10px;box-sizing:border-box;
+    border:1px solid var(--rule);border-radius:2px;background:#fff;color:var(--ink);resize:vertical;
+  }
+  .import-textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+  .import-hint-note{font-size:12px;color:var(--ink-soft);margin-top:8px;}
+  .import-preview{margin-top:16px;}
+  .import-summary{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;
+    font-size:12px;color:var(--ink-soft);
+  }
+  .import-row{
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+    background:#fff;border:1px solid var(--rule);border-radius:3px;padding:10px;margin-bottom:8px;
+  }
+  .import-row.import-row-warn{border-color:var(--danger);background:var(--danger-soft);}
+  .import-row input[type="date"], .import-row input[type="time"]{
+    font-family:var(--mono);font-size:12px;padding:6px 7px;border:1px solid var(--rule);
+    border-radius:2px;background:#fff;color:var(--ink);
+  }
+  .import-row input[type="text"]{
+    font-family:var(--mono);font-size:12px;padding:6px 7px;border:1px solid var(--rule);
+    border-radius:2px;background:#fff;color:var(--ink);flex:1;min-width:100px;box-sizing:border-box;
+  }
+  .import-row .import-job{max-width:130px;}
+  .import-row .import-note{flex-basis:100%;}
+  .import-row .import-include{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex:none;}
+  .import-row .import-remove{
+    background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:15px;padding:2px 6px;flex:none;
+  }
+  .import-row .import-remove:hover{color:var(--danger);}
+  .import-row-warn-label{flex-basis:100%;font-size:11px;color:var(--danger);}
+  .import-row-raw{flex-basis:100%;font-size:11px;color:var(--ink-faint);font-style:italic;overflow-wrap:break-word;}
+
+  @media (max-width:720px){
+    .import-row{flex-direction:column;align-items:stretch;}
+    .import-row .import-include{align-self:flex-start;}
+    .import-row .import-remove{align-self:flex-end;}
+    .import-row .import-job{max-width:none;}
+  }
+
+  .log-btn{
+    background:none;border:1px solid var(--accent-line);color:var(--accent);
+    border-radius:2px;padding:3px 9px;font-size:11px;cursor:pointer;font-family:var(--sans);
+    white-space:nowrap;
+  }
+  .log-btn:hover{background:var(--accent);color:var(--paper);border-color:var(--accent);}
+  tr.upcoming-past td.date, tr.upcoming-past td.job{color:var(--ink-faint);}
+
+  @media (max-width: 720px){
+    .planner-grid{grid-template-columns:1fr;}
+    .planner-toolbar{flex-direction:column;align-items:stretch;}
+  }
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:var(--paper);padding:9px 18px;border-radius:3px;
+    font-size:13px;opacity:0;transition:opacity 0.2s, transform 0.2s;pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (max-width: 720px){
+    body{padding-bottom:60px;font-size:15px;}
+    .wrap{padding:0 14px;}
+
+    header{padding:22px 0 16px;margin-bottom:20px;align-items:flex-start;}
+    header h1{font-size:23px;}
+    header > div:last-child{
+      width:100%;display:flex;justify-content:space-between;align-items:center;
+    }
+    .user-bar{gap:8px;}
+    .user-bar .who{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+    .settings-panel.open{flex-direction:column;gap:14px;}
+    .settings-panel input, .settings-panel select{width:100%;}
+
+    .tabs{gap:0;margin-bottom:20px;}
+    .tab-btn{flex:1;text-align:center;margin-right:0;font-size:14px;padding:10px 4px;}
+
+    form.wish-form, form.entry-form{
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+    form.wish-form button, form.entry-form button{
+      grid-column:1/-1;width:100%;height:44px;font-size:14px;
+    }
+    form.wish-form input, form.entry-form input, form.entry-form select{
+      font-size:16px; /* prevents iOS auto-zoom on focus */
+      height:46px;
+      padding:0 12px;
+    }
+
+    .summary{grid-template-columns:repeat(2,1fr);}
+    .summary .cell{padding:12px 14px;}
+    .summary .cell .value{font-size:18px;}
+
+    .panel-title{flex-direction:column;align-items:flex-start;gap:4px;}
+
+    .history-toggle{flex-wrap:wrap;padding:12px;}
+    .history-toggle .agg{margin-left:0;width:100%;order:3;}
+
+    .wish-card{
+      grid-template-columns:auto 1fr auto;
+      grid-template-rows:auto auto auto;
+      row-gap:4px;
+    }
+    .wish-card .w-check{grid-row:1/3;grid-column:1/2;align-self:start;margin-top:2px;}
+    .wish-card .w-name{grid-column:2/3;grid-row:1/2;}
+    .wish-card .w-price{grid-column:2/3;grid-row:2/3;text-align:left;color:var(--ink-soft);font-family:var(--mono);font-size:12px;}
+    .wish-card .w-hours{grid-row:1/3;grid-column:3/4;}
+    .wish-card .wish-actions{grid-row:3/4;grid-column:1/4;justify-content:flex-end;margin-top:4px;}
+
+    /* entries table -> stacked cards */
+    .month-header{padding:12px 4px 6px;}
+    table thead{display:none;}
+    table, tbody, tr, td{display:block;width:100%;}
+    tbody tr{
+      border:1px solid var(--rule);border-radius:4px;margin-bottom:10px;padding:8px 12px;
+      background:#fff;
+    }
+    tbody tr.empty-row{border:none;background:none;padding:0;}
+    tbody td{
+      display:flex;justify-content:space-between;align-items:center;
+      padding:7px 0;border-bottom:1px dashed var(--paper-line);
+      text-align:right;
+    }
+    tbody td:last-child{border-bottom:none;}
+    tbody td.notes{max-width:none;}
+    tbody td[data-label]::before{
+      content:attr(data-label);
+      font-size:11px;text-transform:uppercase;letter-spacing:0.05em;
+      color:var(--ink-soft);text-align:left;
+    }
+    tbody td.actions-cell{justify-content:flex-end;padding:4px 0 0;gap:6px;}
+    tbody td.actions-cell::before{content:none;}
+
+    /* auth screen */
+    .auth-wrap{margin:40px auto;padding:0 18px;}
+    .auth-form{padding:18px;}
+    .auth-actions{flex-direction:column;}
+    .auth-form input{font-size:16px;}
+  }
+
+  /* --- auth screen --- */
+  .auth-wrap{
+    max-width:360px;margin:80px auto;padding:0 24px;
+  }
+  .auth-wrap h1{
+    font-family:var(--serif);font-weight:400;font-size:28px;margin:0 0 6px;
+  }
+  .auth-wrap .sub{color:var(--ink-soft);font-size:13px;margin-bottom:28px;}
+  .auth-form{
+    background:#fff;border:1px solid var(--rule);border-radius:4px;padding:24px;
+  }
+  .auth-form .field{margin-bottom:14px;}
+  .auth-form label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:4px;}
+  .auth-form input{
+    width:100%;font-family:var(--mono);font-size:14px;padding:9px 10px;
+    border:1px solid var(--rule);border-radius:2px;background:#fff;color:var(--ink);
+  }
+  .auth-form input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+  .auth-actions{display:flex;gap:10px;margin-top:18px;}
+  .auth-actions button{
+    flex:1;border-radius:2px;padding:10px 14px;font-size:13px;cursor:pointer;font-family:var(--sans);border:1px solid var(--ink-faint);
+  }
+  .auth-actions button.primary{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .auth-actions button.primary:hover{background:var(--accent);border-color:var(--accent);}
+  .auth-actions button:not(.primary):hover{border-color:var(--ink);color:var(--ink);}
+  .auth-error{color:var(--danger);font-size:12px;margin-top:12px;display:none;}
+  .auth-error.show{display:block;}
+  .auth-note{color:var(--ink-faint);font-size:12px;margin-top:16px;}
+
+  .user-bar{
+    display:flex;align-items:center;gap:12px;font-size:12px;color:var(--ink-soft);
+  }
+  .user-bar .who{font-family:var(--mono);}
+  .user-bar button{
+    background:none;border:1px solid var(--ink-faint);color:var(--ink-soft);
+    border-radius:2px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:var(--sans);
+  }
+  .user-bar button:hover{border-color:var(--ink);color:var(--ink);}
+</style>
+</head>
+<body>
+
+<div class="auth-wrap" id="authScreen">
+  <h1>Work hours ledger</h1>
+  <div class="sub">Sign in to log shifts and save your data.</div>
+  <form class="auth-form" id="authForm">
+    <div class="field">
+      <label for="authEmail">Email</label>
+      <input type="email" id="authEmail" autocomplete="email" required>
+    </div>
+    <div class="field">
+      <label for="authPassword">Password</label>
+      <input type="password" id="authPassword" autocomplete="current-password" required minlength="6">
+    </div>
+    <div class="auth-actions">
+      <button type="submit" class="primary" id="authSignIn">Sign in</button>
+      <button type="button" id="authSignUp">Create account</button>
+    </div>
+    <div class="auth-error" id="authError"></div>
+  </form>
+  <div class="auth-note">Each account has its own private ledger and wishlist — nothing is shared between accounts.</div>
+</div>
+
+<div class="public-wrap" id="publicWishlistScreen" style="display:none"></div>
+
+<div class="wrap" id="appRoot" style="display:none">
+
+  <header>
+    <div>
+      <h1>Work hours ledger</h1>
+      <div class="sub">Log a shift, and pay is worked out for you.</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div class="user-bar">
+        <span class="who" id="whoAmI"></span>
+        <button id="signOutBtn">Sign out</button>
+      </div>
+      <button class="settings-toggle" id="settingsToggle" aria-expanded="false">Settings</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="ledger">Ledger</button>
+    <button class="tab-btn" data-tab="upcoming">Upcoming</button>
+    <button class="tab-btn" data-tab="history">History</button>
+    <button class="tab-btn" data-tab="planner">Planner</button>
+    <button class="tab-btn" data-tab="school">School</button>
+    <button class="tab-btn" data-tab="wishlist">Wishlist</button>
+  </nav>
+
+  <div class="settings-panel" id="settingsPanel">
+    <div class="field">
+      <label for="travelReimbursement">Travel reimbursement</label>
+      <label class="toggle-row">
+        <input type="checkbox" id="travelReimbursement" checked>
+      </label>
+    </div>
+    <div class="field">
+      <label for="payrollDay">Payroll date</label>
+      <select id="payrollDay"></select>
+    </div>
+
+    <div class="workplaces-block">
+      <label class="workplaces-label">Workplaces</label>
+      <div id="workplacesList"></div>
+      <button type="button" id="addWorkplaceBtn" class="add-workplace-btn">+ Add workplace</button>
+
+      <div id="workplaceForm" class="workplace-form" style="display:none">
+        <div class="field">
+          <label for="wpName">Name</label>
+          <input type="text" id="wpName" placeholder="e.g. ENNE Ring">
+        </div>
+        <div class="field">
+          <label for="wpRate">Default hourly rate</label>
+          <input type="number" id="wpRate" min="0" step="0.01" value="0">
+        </div>
+        <div class="field">
+          <label for="wpCurrency">Currency</label>
+          <select id="wpCurrency">
+            <option value="¥">¥ JPY</option>
+            <option value="$">$ USD</option>
+            <option value="£">£ GBP</option>
+            <option value="€">€ EUR</option>
+            <option value="A$">A$ AUD</option>
+            <option value="C$">C$ CAD</option>
+            <option value="₫">₫ VND</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="wpOtThreshold">Overtime after (hrs/day)</label>
+          <input type="number" id="wpOtThreshold" min="0" step="0.5" value="8">
+        </div>
+        <div class="field">
+          <label for="wpOtMult">Overtime multiplier</label>
+          <input type="number" id="wpOtMult" min="1" step="0.05" value="1.0">
+        </div>
+        <div class="field">
+          <label for="wpTravelExpense">Travel expenses (per shift)</label>
+          <input type="number" id="wpTravelExpense" min="0" step="0.01" value="0">
+        </div>
+        <div class="workplace-warning" id="workplaceWarning">This workplace already exists</div>
+        <div class="workplace-form-actions">
+          <button type="button" id="wpSaveFuture">Save for future entries</button>
+          <button type="button" id="wpSaveOverride">Save + Override existing entries</button>
+          <button type="button" id="wpCancel" class="cancel-edit-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section id="tab-ledger" class="tab-panel active">
+  <div class="summary" id="summary">
+    <div class="cell"><div class="label">Hours this week</div><div class="value" id="sumWeekHours">0</div></div>
+    <div class="cell money"><div class="label">Pay this week</div><div class="value" id="sumWeekPay">0</div></div>
+    <div class="cell"><div class="label">Hours this month</div><div class="value" id="sumMonthHours">0</div></div>
+    <div class="cell money"><div class="label">Pay this month</div><div class="value" id="sumMonthPay">0</div></div>
+  </div>
+
+  <h2 class="panel-title">Log a shift <span class="hint">rate defaults to your setting above — override per row if needed</span></h2>
+  <form class="entry-form" id="entryForm">
+    <div class="field">
+      <label for="fDate">Date</label>
+      <input type="date" id="fDate" required>
+    </div>
+    <div class="field">
+      <label for="fJob">Job / client</label>
+      <input type="text" id="fJob" placeholder="e.g. LangGo">
+    </div>
+    <div class="field">
+      <label for="fStart">Start</label>
+      <input type="time" id="fStart">
+    </div>
+    <div class="field">
+      <label for="fEnd">End</label>
+      <input type="time" id="fEnd">
+    </div>
+    <div class="field">
+      <label for="fBreak">Break (min)</label>
+      <input type="number" id="fBreak" min="0" step="1" value="0">
+    </div>
+    <div class="field">
+      <label for="fRate">Rate (blank = default)</label>
+      <input type="number" id="fRate" min="0" step="0.01" placeholder="auto">
+    </div>
+    <div class="field">
+      <label for="fTravel">Travel expenses (blank = default)</label>
+      <input type="number" id="fTravel" min="0" step="0.01" placeholder="auto">
+    </div>
+    <button type="submit" id="entrySubmitBtn">Add entry</button>
+    <button type="button" id="entryCancelBtn" class="cancel-edit-btn" style="display:none">Cancel</button>
+    <div class="error-msg" id="formError"></div>
+  </form>
+
+  <h2 class="panel-title">Entries</h2>
+  <div id="tableContainer"></div>
+  <div class="footer-actions">
+    <button id="exportCsv">Export CSV</button>
+    <button id="clearAll">Clear all</button>
+  </div>
+  </section>
+
+  <section id="tab-upcoming" class="tab-panel">
+    <div class="import-panel">
+      <h2 class="panel-title">Import from a message <span class="hint">paste what your manager sent — dates and times are pulled out for you to check before adding</span></h2>
+      <div class="field">
+        <label for="importJob">Apply job / client to all</label>
+        <input type="text" id="importJob" placeholder="e.g. LangGo" list="importWorkplaceList">
+        <datalist id="importWorkplaceList"></datalist>
+      </div>
+      <textarea id="importText" class="import-textarea" rows="5" placeholder="Paste the message here, one shift per line, e.g.&#10;9/20 13:00-18:00&#10;9/22 10:00-15:00&#10;Sep 25 1pm-6pm"></textarea>
+      <div class="import-hint-note">Understands dates like 9/20, 2026-09-20, or "Sep 20", and times like 13:00-18:00 or 1pm-6pm. Lines it can't read a date from are skipped.</div>
+      <div class="footer-actions" style="justify-content:flex-start;margin-top:10px;">
+        <button type="button" id="parseImportBtn">Parse message</button>
+        <button type="button" id="clearImportBtn">Clear</button>
+      </div>
+      <div id="importPreviewContainer"></div>
+    </div>
+
+    <h2 class="panel-title">Upcoming schedule <span class="hint">shifts your manager gave you — add them here, then log as worked once completed</span></h2>
+    <form class="entry-form" id="upcomingForm">
+      <div class="field">
+        <label for="uDate">Date</label>
+        <input type="date" id="uDate" required>
+      </div>
+      <div class="field">
+        <label for="uJob">Job / client</label>
+        <input type="text" id="uJob" placeholder="e.g. LangGo">
+      </div>
+      <div class="field">
+        <label for="uStart">Start</label>
+        <input type="time" id="uStart">
+      </div>
+      <div class="field">
+        <label for="uEnd">End</label>
+        <input type="time" id="uEnd">
+      </div>
+      <div class="field">
+        <label for="uNote">Note (optional)</label>
+        <input type="text" id="uNote" placeholder="e.g. covering for Sam">
+      </div>
+      <button type="submit" id="upcomingSubmitBtn">Add shift</button>
+      <button type="button" id="upcomingCancelBtn" class="cancel-edit-btn" style="display:none">Cancel</button>
+      <div class="error-msg" id="upcomingFormError"></div>
+    </form>
+    <div id="upcomingContainer"></div>
+  </section>
+
+  <section id="tab-history" class="tab-panel">
+    <h2 class="panel-title">History <span class="hint">past pay periods, compiled automatically on your payroll date</span></h2>
+    <div id="historyContainer"></div>
+  </section>
+
+  <section id="tab-planner" class="tab-panel">
+    <h2 class="panel-title">Weekly planner <span class="hint">block out the hours you plan to work — for planning only, it doesn't touch your pay log</span></h2>
+    <div class="planner-toolbar">
+      <div class="planner-week-nav">
+        <button type="button" id="plannerPrevWeek">&lsaquo; Prev</button>
+        <span class="planner-week-label" id="plannerWeekLabel"></span>
+        <button type="button" id="plannerNextWeek">Next &rsaquo;</button>
+        <button type="button" id="plannerThisWeek">This week</button>
+      </div>
+      <div class="planner-week-total" id="plannerWeekTotal"></div>
+    </div>
+    <div class="planner-grid" id="plannerGrid"></div>
+  </section>
+
+  <section id="tab-school" class="tab-panel">
+    <h2 class="panel-title">School schedule <span class="hint">your recurring weekly classes — repeats every week, so you can see it against your work planner</span></h2>
+    <div class="planner-grid" id="schoolGrid"></div>
+
+    <h2 class="panel-title" style="margin-top:36px">Bus to work <span class="hint">the route from school to work, with when it leaves and how long it takes</span></h2>
+    <form class="entry-form" id="busForm">
+      <div class="field">
+        <label for="busLabel">Route / bus name</label>
+        <input type="text" id="busLabel" placeholder="e.g. City Bus 42">
+      </div>
+      <div class="field">
+        <label for="busDeparture">Departs</label>
+        <input type="time" id="busDeparture" required>
+      </div>
+      <div class="field">
+        <label for="busTravel">Est. travel time (min)</label>
+        <input type="number" id="busTravel" min="0" step="1" required>
+      </div>
+      <div class="field">
+        <label for="busNote">Note (optional)</label>
+        <input type="text" id="busNote" placeholder="e.g. from the Main Gate stop">
+      </div>
+      <button type="submit" id="busSubmitBtn">Add bus</button>
+      <button type="button" id="busCancelBtn" class="cancel-edit-btn" style="display:none">Cancel</button>
+      <div class="error-msg" id="busFormError"></div>
+    </form>
+    <div id="busListContainer"></div>
+  </section>
+
+  <section id="tab-wishlist" class="tab-panel">
+    <h2 class="panel-title">Add something you want <span class="hint">cost is converted into hours of work at your default rate</span></h2>
+    <div class="wishlist-privacy-row">
+      <input type="checkbox" id="wishlistPrivate" checked>
+      <label for="wishlistPrivate">Privacy: keep this wishlist private</label>
+    </div>
+    <form class="wish-form" id="wishForm">
+      <div class="field">
+        <label for="wName">Item</label>
+        <input type="text" id="wName" placeholder="e.g. noise-cancelling headphones" required>
+      </div>
+      <div class="field">
+        <label for="wPrice">Price</label>
+        <input type="number" id="wPrice" min="0" step="0.01" required>
+      </div>
+      <div class="field">
+        <label for="wUrl">Website link</label>
+        <input type="url" id="wUrl" placeholder="https://...">
+      </div>
+      <button type="submit" id="wishSubmitBtn">Add to wishlist</button>
+      <button type="button" id="wishCancelBtn" class="cancel-edit-btn" style="display:none">Cancel</button>
+      <div class="error-msg" id="wishFormError"></div>
+    </form>
+
+    <div class="wishlist-header-row">
+      <h2 class="panel-title">Wishlist</h2>
+      <button type="button" class="share-btn" id="shareWishlistBtn">Copy share link</button>
+    </div>
+    <div id="wishlistContainer"></div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ---- Supabase config ----
+// Fill these in with your own project's values (Project Settings > API in Supabase).
+// The anon/public key is safe to expose in client-side code; access is controlled
+// by the Row Level Security policies set up on the ledger_data table.
+const SUPABASE_URL = 'https://dnhxicaqqeaasjvrtwum.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_y39Pt4PI9VvDRnnzLiovZw_biiHwBWL';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUser = null;
+let entries = [];
+let wishlist = [];
+let history = [];
+let settings = { rate: 0, currency: '¥', otThreshold: 8, otMult: 1.0, travelExpense: 0, travelReimbursement: true, payrollDay: 0, lastPayrollRun: '', wishlistPrivate: true, workplaces: [], weeklyPlan: {}, schoolSchedule: {}, buses: [], upcomingShifts: [] };
+let loaded = false;
+let editingEntryId = null;
+let editingWishId = null;
+let plannerWeekOffset = 0;
+let plannerFormOpenFor = null;
+let schoolFormOpenFor = null;
+let editingBusId = null;
+let editingUpcomingId = null;
+
+function fmtMoney(n){
+  return settings.currency + Number(n).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function fmtMoneyAs(n, currency){
+  return (currency||'¥') + Number(n).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function fmtHours(n){
+  return (Math.round(n*100)/100).toString();
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._h);
+  showToast._h = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+function computeHours(start, end, breakMin){
+  if(!start || !end) return 0;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  let mins = (eh*60+em) - (sh*60+sm);
+  if(mins < 0) mins += 24*60;
+  mins -= (Number(breakMin)||0);
+  return Math.max(0, mins/60);
+}
+
+function computePay(hours, rate, otThreshold, otMult){
+  const r = Number(rate);
+  const ot = Number(otThreshold);
+  const mult = Number(otMult);
+  if(ot > 0 && hours > ot && mult > 1){
+    const reg = ot * r;
+    const over = (hours - ot) * r * mult;
+    return reg + over;
+  }
+  return hours * r;
+}
+
+function computeTravel(entry, defaultTravelExpense){
+  const hasOverride = (entry.travelExpense !== null && entry.travelExpense !== '' && entry.travelExpense !== undefined);
+  if(hasOverride) return Number(entry.travelExpense);
+  // When travel is being reimbursed directly (out-of-pocket, outside this app),
+  // there's no reason to fall back to a flat default — it isn't company money.
+  if(settings.travelReimbursement) return 0;
+  return Number(defaultTravelExpense) || 0;
+}
+
+function findWorkplace(jobName){
+  const name = (jobName||'').trim().toLowerCase();
+  if(!name || !settings.workplaces) return null;
+  return settings.workplaces.find(w => (w.name||'').trim().toLowerCase() === name) || null;
+}
+
+// Resolves the rate/currency/overtime/travel defaults that apply to a shift,
+// based on which workplace (if any) its Job/client field matches.
+function jobDefaults(jobName){
+  const wp = findWorkplace(jobName);
+  if(wp){
+    return {
+      rate: Number(wp.rate)||0,
+      currency: wp.currency || settings.currency,
+      otThreshold: Number(wp.otThreshold)||0,
+      otMult: Number(wp.otMult)||1,
+      travelExpense: Number(wp.travelExpense)||0
+    };
+  }
+  return {
+    rate: Number(settings.rate)||0,
+    currency: settings.currency,
+    otThreshold: Number(settings.otThreshold)||0,
+    otMult: Number(settings.otMult)||1,
+    travelExpense: Number(settings.travelExpense)||0
+  };
+}
+
+function computeTotal(pay, travel){
+  return settings.travelReimbursement ? (pay + travel) : (pay - travel);
+}
+
+function travelClass(){
+  return settings.travelReimbursement ? 'travel-reimbursed' : 'travel';
+}
+
+async function loadData(){
+  if(!currentUser) return;
+  try{
+    const { data, error } = await supabaseClient
+      .from('ledger_data')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    if(error) throw error;
+    if(data){
+      if(data.settings) settings = Object.assign(settings, data.settings);
+      if(data.entries) entries = data.entries;
+      if(data.wishlist) wishlist = data.wishlist;
+      if(data.history) history = data.history;
+    } else {
+      // first time this user has used the app — create their row
+      await supabaseClient.from('ledger_data').insert({
+        user_id: currentUser.id, settings, entries, wishlist, history
+      });
+    }
+  }catch(e){
+    showToast('Could not load your saved data');
+  }
+  migrateToWorkplaces();
+  await runPayrollArchive();
+  loaded = true;
+  applySettingsToForm();
+  render();
+  renderWishlist();
+  renderHistory();
+  renderPlanner();
+  renderSchoolSchedule();
+  renderBuses();
+  renderUpcoming();
+}
+
+// One-time migration: before workplaces existed, everything used a single
+// flat rate/currency/overtime/travel setup. Turn that into a starter
+// workplace so existing entries keep computing exactly as they did before.
+function migrateToWorkplaces(){
+  if(settings.workplaces && settings.workplaces.length > 0) return;
+  const counts = {};
+  entries.forEach(e=>{
+    const name = (e.job||'').trim();
+    if(name) counts[name] = (counts[name]||0) + 1;
+  });
+  let topName = 'Default';
+  let topCount = 0;
+  Object.keys(counts).forEach(name=>{
+    if(counts[name] > topCount){ topCount = counts[name]; topName = name; }
+  });
+  settings.workplaces = [{
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    name: topName,
+    rate: settings.rate,
+    currency: settings.currency,
+    otThreshold: settings.otThreshold,
+    otMult: settings.otMult,
+    travelExpense: settings.travelExpense
+  }];
+  saveSettings();
+}
+
+async function saveSettings(){
+  try{
+    const { error } = await supabaseClient
+      .from('ledger_data')
+      .update({ settings, updated_at: new Date().toISOString() })
+      .eq('user_id', currentUser.id);
+    if(error) throw error;
+  }catch(e){ showToast('Could not save settings'); }
+}
+async function saveEntries(){
+  try{
+    const { error } = await supabaseClient
+      .from('ledger_data')
+      .update({ entries, updated_at: new Date().toISOString() })
+      .eq('user_id', currentUser.id);
+    if(error) throw error;
+  }catch(e){ showToast('Could not save entry'); }
+}
+async function saveWishlist(){
+  try{
+    const { error } = await supabaseClient
+      .from('ledger_data')
+      .update({ wishlist, updated_at: new Date().toISOString() })
+      .eq('user_id', currentUser.id);
+    if(error) throw error;
+  }catch(e){ showToast('Could not save wishlist item'); }
+  await syncPublicWishlist();
+}
+
+async function syncPublicWishlist(){
+  if(!currentUser) return;
+  try{
+    await supabaseClient.from('wishlist_public').upsert({
+      user_id: currentUser.id,
+      wishlist,
+      currency: settings.currency,
+      wishlist_private: settings.wishlistPrivate !== false,
+      updated_at: new Date().toISOString()
+    });
+  }catch(e){
+    // Non-critical: the private ledger data already saved fine above.
+    // The share link just won't reflect the latest change until this succeeds.
+  }
+}
+async function saveHistory(){
+  try{
+    const { error } = await supabaseClient
+      .from('ledger_data')
+      .update({ history, updated_at: new Date().toISOString() })
+      .eq('user_id', currentUser.id);
+    if(error) throw error;
+  }catch(e){ showToast('Could not save history'); }
+}
+
+function daysInMonth(year, monthIndex){ // monthIndex is 0-based
+  return new Date(year, monthIndex+1, 0).getDate();
+}
+
+function monthLabel(monthKey){ // 'YYYY-MM' -> 'September/2026'
+  const [y, m] = monthKey.split('-').map(Number);
+  const name = new Date(y, m-1, 1).toLocaleDateString(undefined, {month:'long'});
+  return `${name}/${y}`;
+}
+
+// ---- ISO 8601 week numbering (Mon–Sun weeks, Week 1 = week containing the
+// year's first Thursday). Used to group the Ledger's Entries table by week. ----
+function isoWeekInfo(dateStr){
+  const [y, m, day] = dateStr.slice(0,10).split('-').map(Number);
+  const d = new Date(Date.UTC(y, m-1, day));
+  const dayNum = d.getUTCDay() || 7; // Mon=1 .. Sun=7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum); // move to the Thursday of this week
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+
+  // Monday/Sunday of the original date's week, for the display range
+  const monday = new Date(Date.UTC(y, m-1, day));
+  monday.setUTCDate(monday.getUTCDate() - dayNum + 1);
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+
+  return { isoYear: d.getUTCFullYear(), weekNo, monday, sunday };
+}
+
+function isoWeekKey(dateStr){
+  const info = isoWeekInfo(dateStr);
+  return `${info.isoYear}-W${String(info.weekNo).padStart(2,'0')}`;
+}
+
+function isoWeekLabel(dateStr){
+  const info = isoWeekInfo(dateStr);
+  const fmt = (d)=> d.toLocaleDateString(undefined, {month:'short', day:'numeric', timeZone:'UTC'});
+  return `Week ${info.weekNo}, ${info.isoYear} · ${fmt(info.monday)} – ${fmt(info.sunday)}`;
+}
+
+// Which pay period a date belongs to. If a payroll date is set, work done
+// AFTER that day of the month belongs to the following month's period —
+// e.g. with payroll day 15, Aug 16–Sep 15 is the "September" period.
+function payPeriodKey(dateStr){
+  const payrollDay = Number(settings.payrollDay) || 0;
+  const [y, m, d] = dateStr.slice(0,10).split('-').map(Number); // m is 1-based
+  if(!payrollDay) return `${y}-${String(m).padStart(2,'0')}`;
+  const effectiveDay = Math.min(payrollDay, daysInMonth(y, m-1));
+  if(d > effectiveDay){
+    let ny = y, nm = m + 1;
+    if(nm > 12){ nm = 1; ny += 1; }
+    return `${ny}-${String(nm).padStart(2,'0')}`;
+  }
+  return `${y}-${String(m).padStart(2,'0')}`;
+}
+
+async function runPayrollArchive(){
+  const payrollDay = Number(settings.payrollDay) || 0;
+  if(!payrollDay) return; // no payroll date chosen yet — archiving stays off
+
+  const todayStr = new Date().toISOString().slice(0,10);
+  const currentPeriodKey = payPeriodKey(todayStr);
+
+  const toArchive = entries.filter(e => payPeriodKey(e.date) !== currentPeriodKey);
+
+  if(toArchive.length > 0){
+    const groups = {};
+    toArchive.forEach(e=>{
+      const pk = payPeriodKey(e.date);
+      if(!groups[pk]) groups[pk] = [];
+      groups[pk].push(e);
+    });
+    Object.keys(groups).forEach(pk=>{
+      const existing = history.find(h => h.monthKey === pk);
+      if(existing){
+        existing.entries = existing.entries.concat(groups[pk]);
+      } else {
+        history.push({ id: pk, monthKey: pk, label: monthLabel(pk), entries: groups[pk] });
+      }
+    });
+    entries = entries.filter(e => payPeriodKey(e.date) === currentPeriodKey);
+    await saveEntries();
+    await saveHistory();
+    showToast('Archived last pay period\u2019s entries to History');
+  }
+
+  settings.lastPayrollRun = currentPeriodKey;
+  await saveSettings();
+}
+
+function renderHistory(){
+  const container = document.getElementById('historyContainer');
+  if(!history || history.length === 0){
+    container.innerHTML = '<div class="history-empty">No archived months yet — entries land here once your payroll date passes each month.</div>';
+    return;
+  }
+  const sorted = [...history].sort((a,b)=> b.monthKey.localeCompare(a.monthKey));
+  let html = '';
+  sorted.forEach(h=>{
+    let gHours=0, gTotal=0;
+    let rowsHtml = '';
+    [...h.entries].sort((a,b)=> b.date.localeCompare(a.date)).forEach(e=>{
+      const hours = computeHours(e.start, e.end, e.breakMin);
+      const jd = jobDefaults(e.job);
+      const rate = (e.rate !== null && e.rate !== '' && e.rate !== undefined) ? Number(e.rate) : jd.rate;
+      const pay = computePay(hours, rate, jd.otThreshold, jd.otMult);
+      const travel = computeTravel(e, jd.travelExpense);
+      const total = computeTotal(pay, travel);
+      gHours += hours; gTotal += total;
+      rowsHtml += `<tr>
+        <td class="date" data-label="Date">${e.date}</td>
+        <td class="job" data-label="Job">${escapeHtml(e.job||'—')}</td>
+        <td class="num" data-label="Time">${e.start||'—'}${e.end? ' – '+e.end : ''}</td>
+        <td class="num" data-label="Break">${e.breakMin||0} min</td>
+        <td class="num" data-label="Hours">${fmtHours(hours)}</td>
+        <td class="num" data-label="Rate">${fmtMoneyAs(rate, jd.currency)}</td>
+        <td class="num pay" data-label="Pay">${fmtMoneyAs(pay, jd.currency)}</td>
+        <td class="num ${travelClass()}" data-label="Travel expenses">${fmtMoneyAs(travel, jd.currency)}</td>
+        <td class="num total" data-label="Total">${fmtMoneyAs(total, jd.currency)}</td>
+      </tr>`;
+    });
+    html += `<div class="history-group" data-id="${h.id}">
+      <button class="history-toggle" type="button" aria-expanded="false">
+        <span>${h.label}</span>
+        <span class="agg">${fmtHours(gHours)} hrs &nbsp;·&nbsp; <b>${fmtMoney(gTotal)}</b></span>
+        <span class="chev">&rsaquo;</span>
+      </button>
+      <div class="history-detail">
+        <table>
+          <thead><tr>
+            <th>Date</th><th>Job</th><th class="num">Time</th><th class="num">Break</th>
+            <th class="num">Hours</th><th class="num">Rate</th><th class="num">Pay</th>
+            <th class="num">Travel expenses</th><th class="num">Total</th>
+          </tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+        <div class="footer-actions">
+          <button type="button" class="unarchive-btn" data-id="${h.id}">Unarchive this month</button>
+        </div>
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+  container.querySelectorAll('.history-toggle').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const group = btn.closest('.history-group');
+      const open = group.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  });
+  container.querySelectorAll('.unarchive-btn').forEach(btn=>{
+    btn.addEventListener('click', async (ev)=>{
+      ev.stopPropagation();
+      const id = btn.getAttribute('data-id');
+      const group = history.find(h=>h.id === id);
+      if(!group) return;
+      const count = group.entries.length;
+      if(!confirm(`Move ${count} entr${count===1?'y':'ies'} from ${group.label} back into your active ledger? Any archived changes will merge with your current entries.`)) return;
+      entries = entries.concat(group.entries);
+      history = history.filter(h=>h.id !== id);
+      await saveEntries();
+      await saveHistory();
+      render();
+      renderHistory();
+      showToast(`${group.label} unarchived — back in your ledger`);
+    });
+  });
+}
+
+function populatePayrollOptions(){
+  const sel = document.getElementById('payrollDay');
+  if(sel.options.length > 0) return; // already populated
+  let opts = '<option value="0">Not set</option>';
+  for(let d=1; d<=31; d++){
+    opts += `<option value="${d}">${d}${ordinalSuffix(d)}</option>`;
+  }
+  sel.innerHTML = opts;
+}
+function ordinalSuffix(n){
+  if(n % 10 === 1 && n !== 11) return 'st';
+  if(n % 10 === 2 && n !== 12) return 'nd';
+  if(n % 10 === 3 && n !== 13) return 'rd';
+  return 'th';
+}
+
+function applySettingsToForm(){
+  document.getElementById('travelReimbursement').checked = settings.travelReimbursement !== false;
+  populatePayrollOptions();
+  document.getElementById('payrollDay').value = settings.payrollDay || 0;
+  document.getElementById('wishlistPrivate').checked = settings.wishlistPrivate !== false;
+  renderWorkplaces();
+}
+
+function startOfWeek(d){
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
+  date.setDate(date.getDate() + diff);
+  date.setHours(0,0,0,0);
+  return date;
+}
+
+function toDateStr(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+// ---- Weekly planner (planning only — never touches entries/pay) ----
+function renderPlanner(){
+  if(!loaded) return;
+  const grid = document.getElementById('plannerGrid');
+  if(!grid) return;
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  const base = startOfWeek(new Date());
+  base.setDate(base.getDate() + plannerWeekOffset*7);
+  const weekEnd = new Date(base);
+  weekEnd.setDate(weekEnd.getDate()+6);
+  document.getElementById('plannerWeekLabel').textContent =
+    `${base.toLocaleDateString(undefined,{month:'short',day:'numeric'})} – ${weekEnd.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}`;
+
+  const todayStr = toDateStr(new Date());
+  if(!settings.weeklyPlan) settings.weeklyPlan = {};
+
+  let weekTotal = 0;
+  let html = '';
+  for(let i=0;i<7;i++){
+    const d = new Date(base);
+    d.setDate(d.getDate()+i);
+    const dateStr = toDateStr(d);
+    const blocks = (settings.weeklyPlan[dateStr] || []).slice().sort((a,b)=> (a.start||'').localeCompare(b.start||''));
+    let dayHours = 0;
+    let blocksHtml = '';
+    blocks.forEach(b=>{
+      const hrs = computeHours(b.start, b.end, 0);
+      dayHours += hrs;
+      blocksHtml += `<div class="planner-block">
+        <button type="button" class="pb-del" data-id="${b.id}" data-date="${dateStr}" aria-label="Remove planned block">&times;</button>
+        <span class="pb-time">${b.start||'—'}${b.end ? ' – '+b.end : ''} · ${fmtHours(hrs)}h</span>
+        ${b.label ? `<span class="pb-label">${escapeHtml(b.label)}</span>` : ''}
+      </div>`;
+    });
+    weekTotal += dayHours;
+
+    const isForm = plannerFormOpenFor === dateStr;
+    const addOrForm = isForm ? `
+      <div class="planner-inline-form" data-date="${dateStr}">
+        <input type="time" class="pf-start">
+        <input type="time" class="pf-end">
+        <input type="text" class="pf-label" placeholder="Job / note (optional)">
+        <div class="pf-actions">
+          <button type="button" class="pf-save" data-date="${dateStr}">Add</button>
+          <button type="button" class="pf-cancel">Cancel</button>
+        </div>
+      </div>` : `<button type="button" class="planner-add-btn" data-date="${dateStr}">+ Add hours</button>`;
+
+    html += `<div class="planner-day${dateStr===todayStr ? ' is-today' : ''}">
+      <div class="planner-day-head">
+        <span class="planner-day-name">${dayNames[i]}</span>
+        <span class="planner-day-date">${d.toLocaleDateString(undefined,{month:'short',day:'numeric'})}</span>
+      </div>
+      ${dayHours>0 ? `<div class="planner-day-total">${fmtHours(dayHours)} hrs planned</div>` : ''}
+      ${blocksHtml}
+      ${addOrForm}
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+  document.getElementById('plannerWeekTotal').innerHTML = `<b>${fmtHours(weekTotal)}</b> hrs planned this week`;
+
+  grid.querySelectorAll('.planner-add-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      plannerFormOpenFor = btn.getAttribute('data-date');
+      renderPlanner();
+    });
+  });
+  grid.querySelectorAll('.pf-cancel').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      plannerFormOpenFor = null;
+      renderPlanner();
+    });
+  });
+  grid.querySelectorAll('.pf-save').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const dateStr = btn.getAttribute('data-date');
+      const form = grid.querySelector(`.planner-inline-form[data-date="${dateStr}"]`);
+      const start = form.querySelector('.pf-start').value;
+      const end = form.querySelector('.pf-end').value;
+      const label = form.querySelector('.pf-label').value.trim();
+      if(!start || !end){ showToast('Enter a start and end time'); return; }
+      if(computeHours(start, end, 0) <= 0){ showToast('End time must be after start time'); return; }
+      if(!settings.weeklyPlan[dateStr]) settings.weeklyPlan[dateStr] = [];
+      settings.weeklyPlan[dateStr].push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+        start, end, label
+      });
+      plannerFormOpenFor = null;
+      await saveSettings();
+      renderPlanner();
+      showToast('Planned hours added');
+    });
+  });
+  grid.querySelectorAll('.pb-del').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const dateStr = btn.getAttribute('data-date');
+      const id = btn.getAttribute('data-id');
+      if(settings.weeklyPlan[dateStr]){
+        settings.weeklyPlan[dateStr] = settings.weeklyPlan[dateStr].filter(b=>b.id !== id);
+      }
+      await saveSettings();
+      renderPlanner();
+      showToast('Removed from planner');
+    });
+  });
+}
+
+document.getElementById('plannerPrevWeek').addEventListener('click', ()=>{
+  plannerWeekOffset -= 1;
+  plannerFormOpenFor = null;
+  renderPlanner();
+});
+document.getElementById('plannerNextWeek').addEventListener('click', ()=>{
+  plannerWeekOffset += 1;
+  plannerFormOpenFor = null;
+  renderPlanner();
+});
+document.getElementById('plannerThisWeek').addEventListener('click', ()=>{
+  plannerWeekOffset = 0;
+  plannerFormOpenFor = null;
+  renderPlanner();
+});
+
+// ---- School schedule (recurring weekly, by weekday — not tied to a date) ----
+function renderSchoolSchedule(){
+  if(!loaded) return;
+  const grid = document.getElementById('schoolGrid');
+  if(!grid) return;
+  const dayKeys = ['mon','tue','wed','thu','fri','sat','sun'];
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  if(!settings.schoolSchedule) settings.schoolSchedule = {};
+  const todayIdx = (new Date().getDay() + 6) % 7; // 0 = Mon
+
+  let html = '';
+  dayKeys.forEach((key, i)=>{
+    const blocks = (settings.schoolSchedule[key] || []).slice().sort((a,b)=> (a.start||'').localeCompare(b.start||''));
+    let blocksHtml = '';
+    blocks.forEach(b=>{
+      const hrs = computeHours(b.start, b.end, 0);
+      blocksHtml += `<div class="planner-block">
+        <button type="button" class="sc-del" data-id="${b.id}" data-day="${key}" aria-label="Remove class">&times;</button>
+        <span class="pb-time">${b.start||'—'}${b.end ? ' – '+b.end : ''} · ${fmtHours(hrs)}h</span>
+        ${b.label ? `<span class="pb-label">${escapeHtml(b.label)}</span>` : ''}
+      </div>`;
+    });
+
+    const isForm = schoolFormOpenFor === key;
+    const addOrForm = isForm ? `
+      <div class="planner-inline-form" data-day="${key}">
+        <input type="time" class="sf-start">
+        <input type="time" class="sf-end">
+        <input type="text" class="sf-label" placeholder="Class / room (optional)">
+        <div class="pf-actions">
+          <button type="button" class="sf-save" data-day="${key}">Add</button>
+          <button type="button" class="sf-cancel">Cancel</button>
+        </div>
+      </div>` : `<button type="button" class="school-add-btn" data-day="${key}">+ Add class</button>`;
+
+    html += `<div class="planner-day${i===todayIdx ? ' is-today' : ''}">
+      <div class="planner-day-head"><span class="planner-day-name">${dayNames[i]}</span></div>
+      ${blocksHtml}
+      ${addOrForm}
+    </div>`;
+  });
+
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('.school-add-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      schoolFormOpenFor = btn.getAttribute('data-day');
+      renderSchoolSchedule();
+    });
+  });
+  grid.querySelectorAll('.sf-cancel').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      schoolFormOpenFor = null;
+      renderSchoolSchedule();
+    });
+  });
+  grid.querySelectorAll('.sf-save').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const day = btn.getAttribute('data-day');
+      const form = grid.querySelector(`.planner-inline-form[data-day="${day}"]`);
+      const start = form.querySelector('.sf-start').value;
+      const end = form.querySelector('.sf-end').value;
+      const label = form.querySelector('.sf-label').value.trim();
+      if(!start || !end){ showToast('Enter a start and end time'); return; }
+      if(computeHours(start, end, 0) <= 0){ showToast('End time must be after start time'); return; }
+      if(!settings.schoolSchedule[day]) settings.schoolSchedule[day] = [];
+      settings.schoolSchedule[day].push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+        start, end, label
+      });
+      schoolFormOpenFor = null;
+      await saveSettings();
+      renderSchoolSchedule();
+      showToast('Class added');
+    });
+  });
+  grid.querySelectorAll('.sc-del').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const day = btn.getAttribute('data-day');
+      const id = btn.getAttribute('data-id');
+      if(settings.schoolSchedule[day]){
+        settings.schoolSchedule[day] = settings.schoolSchedule[day].filter(b=>b.id !== id);
+      }
+      await saveSettings();
+      renderSchoolSchedule();
+      showToast('Class removed');
+    });
+  });
+}
+
+// ---- Bus to work ----
+function addMinutesToTime(timeStr, minutes){
+  if(!timeStr) return '';
+  const [h, m] = timeStr.split(':').map(Number);
+  let total = h*60 + m + (Number(minutes) || 0);
+  total = ((total % 1440) + 1440) % 1440;
+  const hh = String(Math.floor(total/60)).padStart(2,'0');
+  const mm = String(total%60).padStart(2,'0');
+  return `${hh}:${mm}`;
+}
+
+function renderBuses(){
+  if(!loaded) return;
+  const container = document.getElementById('busListContainer');
+  if(!container) return;
+  if(!settings.buses) settings.buses = [];
+  if(settings.buses.length === 0){
+    container.innerHTML = '<div class="bus-empty">No buses saved yet — add the route you take from school to work above.</div>';
+    return;
+  }
+  const sorted = [...settings.buses].sort((a,b)=> (a.departure||'').localeCompare(b.departure||''));
+  let html = '';
+  sorted.forEach(b=>{
+    const arrival = addMinutesToTime(b.departure, b.travelMinutes);
+    html += `<div class="bus-item">
+      <span class="bus-label">${escapeHtml(b.label || 'Bus')}</span>
+      <span class="bus-times">Departs <b>${b.departure||'—'}</b> · ${b.travelMinutes||0} min · arrives ~<b>${arrival||'—'}</b></span>
+      ${b.note ? `<span class="bus-note">${escapeHtml(b.note)}</span>` : ''}
+      <span class="bus-actions">
+        <button class="edit-btn bus-edit-btn" type="button" data-id="${b.id}" aria-label="Edit bus">✎</button>
+        <button class="del-btn bus-del-btn" type="button" data-id="${b.id}" aria-label="Remove bus">&times;</button>
+      </span>
+    </div>`;
+  });
+  container.innerHTML = html;
+  container.querySelectorAll('.bus-edit-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> startBusEdit(btn.getAttribute('data-id')));
+  });
+  container.querySelectorAll('.bus-del-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.getAttribute('data-id');
+      settings.buses = settings.buses.filter(b=>b.id !== id);
+      if(editingBusId === id) cancelBusEdit();
+      await saveSettings();
+      renderBuses();
+      showToast('Bus removed');
+    });
+  });
+}
+
+function startBusEdit(id){
+  const b = (settings.buses||[]).find(x=>x.id === id);
+  if(!b) return;
+  editingBusId = id;
+  document.getElementById('busLabel').value = b.label || '';
+  document.getElementById('busDeparture').value = b.departure || '';
+  document.getElementById('busTravel').value = (b.travelMinutes === null || b.travelMinutes === undefined) ? '' : b.travelMinutes;
+  document.getElementById('busNote').value = b.note || '';
+  document.getElementById('busSubmitBtn').textContent = 'Save changes';
+  document.getElementById('busCancelBtn').style.display = '';
+  document.getElementById('busForm').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function cancelBusEdit(){
+  editingBusId = null;
+  document.getElementById('busForm').reset();
+  document.getElementById('busSubmitBtn').textContent = 'Add bus';
+  document.getElementById('busCancelBtn').style.display = 'none';
+}
+
+document.getElementById('busCancelBtn').addEventListener('click', cancelBusEdit);
+
+document.getElementById('busForm').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  const errEl = document.getElementById('busFormError');
+  errEl.classList.remove('show');
+
+  const label = document.getElementById('busLabel').value.trim();
+  const departure = document.getElementById('busDeparture').value;
+  const travelRaw = document.getElementById('busTravel').value;
+  const note = document.getElementById('busNote').value.trim();
+
+  if(!departure){
+    errEl.textContent = 'Enter a departure time.';
+    errEl.classList.add('show');
+    return;
+  }
+  if(travelRaw === '' || Number(travelRaw) < 0){
+    errEl.textContent = 'Enter an estimated travel time in minutes.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  if(!settings.buses) settings.buses = [];
+
+  if(editingBusId){
+    const idx = settings.buses.findIndex(b=>b.id === editingBusId);
+    if(idx !== -1){
+      settings.buses[idx] = { ...settings.buses[idx], label, departure, travelMinutes: Number(travelRaw), note };
+    }
+    await saveSettings();
+    renderBuses();
+    showToast('Bus updated');
+    cancelBusEdit();
+    return;
+  }
+
+  settings.buses.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    label, departure, travelMinutes: Number(travelRaw), note
+  });
+  await saveSettings();
+  renderBuses();
+  showToast('Bus added');
+
+  document.getElementById('busLabel').value = '';
+  document.getElementById('busDeparture').value = '';
+  document.getElementById('busTravel').value = '';
+  document.getElementById('busNote').value = '';
+  document.getElementById('busLabel').focus();
+});
+
+// ---- Upcoming schedule (shifts your manager gives you, ahead of working them) ----
+// ---- Import from a message: pull dates/times out of pasted manager text ----
+const MONTH_NAMES = {
+  jan:1, january:1, feb:2, february:2, mar:3, march:3, apr:4, april:4,
+  may:5, jun:6, june:6, jul:7, july:7, aug:8, august:8,
+  sep:9, sept:9, september:9, oct:10, october:10, nov:11, november:11, dec:12, december:12
+};
+const MONTH_NAME_PATTERN = Object.keys(MONTH_NAMES).sort((a,b)=>b.length-a.length).join('|');
+
+// If a date has no year, pick the year that makes it fall on-or-after ~2
+// months in the past — so pasting a schedule in late December for early
+// January correctly rolls into next year, without needing the year typed.
+function resolveImportYear(month, day, referenceDate){
+  let year = referenceDate.getFullYear();
+  const candidate = new Date(year, month-1, day);
+  const diffDays = (candidate - referenceDate) / 86400000;
+  if(diffDays < -60) year += 1;
+  return year;
+}
+
+function extractImportDate(text, referenceDate){
+  let m;
+
+  // 2026-09-20 or 2026/9/20
+  m = text.match(/\b(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})\b/);
+  if(m){
+    const y = parseInt(m[1],10), mo = parseInt(m[2],10), d = parseInt(m[3],10);
+    if(mo>=1 && mo<=12 && d>=1 && d<=31) return { y, m: mo, d, matchText: m[0] };
+  }
+
+  // "Sep 20", "September 20th", "Sep 20, 2026"
+  let re = new RegExp(`\\b(${MONTH_NAME_PATTERN})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?!\\s*:)(?:,?\\s*(\\d{4}))?\\b`, 'i');
+  m = text.match(re);
+  if(m){
+    const mo = MONTH_NAMES[m[1].toLowerCase()];
+    const d = parseInt(m[2],10);
+    if(d>=1 && d<=31){
+      const y = m[3] ? parseInt(m[3],10) : resolveImportYear(mo, d, referenceDate);
+      return { y, m: mo, d, matchText: m[0] };
+    }
+  }
+
+  // "20 Sep", "20th September 2026"
+  re = new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?(?!\\s*:)\\s+(${MONTH_NAME_PATTERN})\\.?(?:,?\\s*(\\d{4}))?\\b`, 'i');
+  m = text.match(re);
+  if(m){
+    const d = parseInt(m[1],10);
+    const mo = MONTH_NAMES[m[2].toLowerCase()];
+    if(d>=1 && d<=31){
+      const y = m[3] ? parseInt(m[3],10) : resolveImportYear(mo, d, referenceDate);
+      return { y, m: mo, d, matchText: m[0] };
+    }
+  }
+
+  // "9/20" or "09/20" — assumed month/day, no year
+  m = text.match(/\b(\d{1,2})\/(\d{1,2})\b/);
+  if(m){
+    const mo = parseInt(m[1],10), d = parseInt(m[2],10);
+    if(mo>=1 && mo<=12 && d>=1 && d<=31){
+      const y = resolveImportYear(mo, d, referenceDate);
+      return { y, m: mo, d, matchText: m[0] };
+    }
+  }
+
+  return null;
+}
+
+function parseImportTimeToken(tok){
+  const m = tok.trim().toLowerCase().match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
+  if(!m) return null;
+  let h = parseInt(m[1],10);
+  const min = m[2] ? parseInt(m[2],10) : 0;
+  const ap = m[3];
+  if(ap === 'pm' && h < 12) h += 12;
+  if(ap === 'am' && h === 12) h = 0;
+  if(h>23 || min>59) return null;
+  return `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+}
+
+function extractImportTimeRange(text){
+  const re = /(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*(?:-|~|–|—|to)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i;
+  const m = text.match(re);
+  if(!m) return null;
+  const start = parseImportTimeToken(m[1]);
+  const end = parseImportTimeToken(m[2]);
+  if(!start || !end) return null;
+  return { start, end, matchText: m[0] };
+}
+
+function parseImportLine(line, referenceDate){
+  let workLine = line;
+
+  // optional leading "LangGo: ..." job override
+  let jobOverride = null;
+  const jobMatch = workLine.match(/^([A-Za-z][A-Za-z &'-]{0,40}):\s*/);
+  if(jobMatch){
+    jobOverride = jobMatch[1].trim();
+    workLine = workLine.slice(jobMatch[0].length);
+  }
+
+  const dateResult = extractImportDate(workLine, referenceDate);
+  if(!dateResult) return null;
+  workLine = workLine.replace(dateResult.matchText, ' ');
+
+  const timeResult = extractImportTimeRange(workLine);
+  let start = '', end = '';
+  if(timeResult){
+    start = timeResult.start;
+    end = timeResult.end;
+    workLine = workLine.replace(timeResult.matchText, ' ');
+  }
+
+  const note = workLine
+    .replace(/\b(mon|tue|tues|wed|thu|thur|thurs|fri|sat|sun|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/gi, '')
+    .replace(/[()[\],:;·•\-–—]+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  return {
+    date: `${dateResult.y}-${String(dateResult.m).padStart(2,'0')}-${String(dateResult.d).padStart(2,'0')}`,
+    start, end,
+    job: jobOverride,
+    note
+  };
+}
+
+function parseImportText(text, batchJob){
+  const referenceDate = new Date();
+  referenceDate.setHours(0,0,0,0);
+  const lines = text.split(/\r?\n/).flatMap(l=>l.split(';')).map(l=>l.trim()).filter(Boolean);
+
+  return lines.map(line=>{
+    const parsed = parseImportLine(line, referenceDate);
+    const base = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), raw: line };
+    if(parsed){
+      return { ...base, ok: true, include: true,
+        date: parsed.date, job: parsed.job || batchJob || '', start: parsed.start, end: parsed.end, note: parsed.note };
+    }
+    return { ...base, ok: false, include: false, date: '', job: batchJob || '', start: '', end: '', note: '' };
+  });
+}
+
+let importDraft = [];
+
+function renderImportPreview(){
+  const container = document.getElementById('importPreviewContainer');
+  if(!container) return;
+  if(importDraft.length === 0){ container.innerHTML = ''; return; }
+
+  const okCount = importDraft.filter(d=>d.ok).length;
+  const warnCount = importDraft.length - okCount;
+
+  let html = `<div class="import-preview">
+    <div class="import-summary">
+      <span>${okCount} shift${okCount===1?'':'s'} recognized${warnCount>0 ? `, ${warnCount} need${warnCount===1?'s':''} a date filled in` : ''}</span>
+    </div>`;
+  importDraft.forEach(d=>{
+    html += `<div class="import-row${d.ok ? '' : ' import-row-warn'}" data-id="${d.id}">
+      <input type="checkbox" class="import-include" data-id="${d.id}" ${d.include ? 'checked' : ''} aria-label="Include this shift">
+      <input type="date" class="import-date" data-id="${d.id}" value="${d.date||''}">
+      <input type="text" class="import-job" data-id="${d.id}" placeholder="Job" value="${escapeHtml(d.job||'')}">
+      <input type="time" class="import-start" data-id="${d.id}" value="${d.start||''}">
+      <input type="time" class="import-end" data-id="${d.id}" value="${d.end||''}">
+      <input type="text" class="import-note" data-id="${d.id}" placeholder="Note" value="${escapeHtml(d.note||'')}">
+      <button type="button" class="import-remove" data-id="${d.id}" aria-label="Remove row">&times;</button>
+      ${!d.ok ? `<span class="import-row-warn-label">Couldn't find a date on this line — fill it in or remove it</span>` : ''}
+      <span class="import-row-raw">"${escapeHtml(d.raw)}"</span>
+    </div>`;
+  });
+  html += `<div class="footer-actions" style="justify-content:flex-start;margin-top:4px;">
+    <button type="button" id="importAddAllBtn">Add selected to Upcoming</button>
+  </div></div>`;
+  container.innerHTML = html;
+
+  function findDraft(id){ return importDraft.find(d=>d.id === id); }
+
+  container.querySelectorAll('.import-include').forEach(el=>{
+    el.addEventListener('change', ()=>{ const d = findDraft(el.getAttribute('data-id')); if(d) d.include = el.checked; });
+  });
+  container.querySelectorAll('.import-date').forEach(el=>{
+    el.addEventListener('input', ()=>{ const d = findDraft(el.getAttribute('data-id')); if(d){ d.date = el.value; d.ok = !!d.date; } });
+  });
+  container.querySelectorAll('.import-job').forEach(el=>{
+    el.addEventListener('input', ()=>{ const d = findDraft(el.getAttribute('data-id')); if(d) d.job = el.value; });
+  });
+  container.querySelectorAll('.import-start').forEach(el=>{
+    el.addEventListener('input', ()=>{ const d = findDraft(el.getAttribute('data-id')); if(d) d.start = el.value; });
+  });
+  container.querySelectorAll('.import-end').forEach(el=>{
+    el.addEventListener('input', ()=>{ const d = findDraft(el.getAttribute('data-id')); if(d) d.end = el.value; });
+  });
+  container.querySelectorAll('.import-note').forEach(el=>{
+    el.addEventListener('input', ()=>{ const d = findDraft(el.getAttribute('data-id')); if(d) d.note = el.value; });
+  });
+  container.querySelectorAll('.import-remove').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      importDraft = importDraft.filter(d=>d.id !== el.getAttribute('data-id'));
+      renderImportPreview();
+    });
+  });
+  const addAllBtn = document.getElementById('importAddAllBtn');
+  if(addAllBtn) addAllBtn.addEventListener('click', addImportedShifts);
+}
+
+async function addImportedShifts(){
+  const toAdd = importDraft.filter(d=> d.include && d.date);
+  if(toAdd.length === 0){ showToast('Select at least one shift with a date to add'); return; }
+  if(!settings.upcomingShifts) settings.upcomingShifts = [];
+  toAdd.forEach(d=>{
+    settings.upcomingShifts.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      date: d.date, job: d.job || '', start: d.start || '', end: d.end || '', note: d.note || ''
+    });
+  });
+  await saveSettings();
+  renderUpcoming();
+  showToast(`Added ${toAdd.length} shift${toAdd.length===1?'':'s'} to Upcoming`);
+  importDraft = importDraft.filter(d=> !(d.include && d.date));
+  renderImportPreview();
+}
+
+const parseImportBtnEl = document.getElementById('parseImportBtn');
+if(parseImportBtnEl){
+  parseImportBtnEl.addEventListener('click', ()=>{
+    const text = document.getElementById('importText').value;
+    const batchJob = document.getElementById('importJob').value.trim();
+    if(!text.trim()){ showToast('Paste a message first'); return; }
+    importDraft = parseImportText(text, batchJob);
+    renderImportPreview();
+    const warnCount = importDraft.filter(d=>!d.ok).length;
+    showToast(warnCount>0
+      ? `Found ${importDraft.length - warnCount} shift(s) — ${warnCount} need review`
+      : `Found ${importDraft.length} shift${importDraft.length===1?'':'s'}`);
+  });
+}
+const clearImportBtnEl = document.getElementById('clearImportBtn');
+if(clearImportBtnEl){
+  clearImportBtnEl.addEventListener('click', ()=>{
+    document.getElementById('importText').value = '';
+    document.getElementById('importJob').value = '';
+    importDraft = [];
+    renderImportPreview();
+  });
+}
+
+function populateImportWorkplaceList(){
+  const list = document.getElementById('importWorkplaceList');
+  if(!list) return;
+  list.innerHTML = (settings.workplaces||[]).map(w=>`<option value="${escapeHtml(w.name)}">`).join('');
+}
+
+function renderUpcoming(){
+  if(!loaded) return;
+  const container = document.getElementById('upcomingContainer');
+  if(!container) return;
+  if(!settings.upcomingShifts) settings.upcomingShifts = [];
+
+  if(settings.upcomingShifts.length === 0){
+    container.innerHTML = '<table><tbody><tr class="empty-row"><td>No upcoming shifts yet — add what your manager gave you above.</td></tr></tbody></table>';
+    return;
+  }
+
+  const todayStr = toDateStr(new Date());
+  const sorted = [...settings.upcomingShifts].sort((a,b)=>{
+    const ka = (a.date||'') + (a.start||'');
+    const kb = (b.date||'') + (b.start||'');
+    return ka.localeCompare(kb);
+  });
+
+  let rowsHtml = '';
+  sorted.forEach(s=>{
+    const hours = computeHours(s.start, s.end, 0);
+    const isPast = s.date && s.date < todayStr;
+    rowsHtml += `<tr class="${isPast ? 'upcoming-past' : ''}">
+      <td class="date" data-label="Date">${s.date||'—'}</td>
+      <td class="job" data-label="Job">${escapeHtml(s.job||'—')}</td>
+      <td class="num" data-label="Time">${s.start||'—'}${s.end ? ' – '+s.end : ''}</td>
+      <td class="num" data-label="Hours">${hours>0 ? fmtHours(hours) : '—'}</td>
+      <td class="notes" data-label="Note">${s.note ? escapeHtml(s.note) : '—'}</td>
+      <td class="actions-cell">
+        <button class="log-btn" type="button" data-id="${s.id}" title="Log this shift to the ledger">Log</button>
+        <button class="edit-btn" type="button" data-id="${s.id}" aria-label="Edit shift">✎</button>
+        <button class="del-btn" type="button" data-id="${s.id}" aria-label="Remove shift">&times;</button>
+      </td>
+    </tr>`;
+  });
+
+  container.innerHTML = `<table>
+    <thead><tr>
+      <th>Date</th><th>Job</th><th class="num">Time</th><th class="num">Hours</th><th>Note</th><th></th>
+    </tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>`;
+
+  container.querySelectorAll('.log-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.getAttribute('data-id');
+      const s = settings.upcomingShifts.find(x=>x.id === id);
+      if(!s) return;
+
+      // Send it into the Ledger's entry form, pre-filled, so the person just
+      // reviews (breaks, actual times, rate override) and saves it as worked.
+      cancelEntryEdit();
+      document.getElementById('fDate').value = s.date || '';
+      document.getElementById('fJob').value = s.job || '';
+      document.getElementById('fStart').value = s.start || '';
+      document.getElementById('fEnd').value = s.end || '';
+
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+      document.querySelector('.tab-btn[data-tab="ledger"]').classList.add('active');
+      document.getElementById('tab-ledger').classList.add('active');
+      document.getElementById('entryForm').scrollIntoView({behavior:'smooth', block:'start'});
+
+      settings.upcomingShifts = settings.upcomingShifts.filter(x=>x.id !== id);
+      await saveSettings();
+      renderUpcoming();
+      showToast('Shift moved to the ledger form — review and save it');
+    });
+  });
+  container.querySelectorAll('.edit-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> startUpcomingEdit(btn.getAttribute('data-id')));
+  });
+  container.querySelectorAll('.del-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.getAttribute('data-id');
+      settings.upcomingShifts = settings.upcomingShifts.filter(x=>x.id !== id);
+      if(editingUpcomingId === id) cancelUpcomingEdit();
+      await saveSettings();
+      renderUpcoming();
+      showToast('Upcoming shift removed');
+    });
+  });
+}
+
+function startUpcomingEdit(id){
+  const s = (settings.upcomingShifts||[]).find(x=>x.id === id);
+  if(!s) return;
+  editingUpcomingId = id;
+  document.getElementById('uDate').value = s.date || '';
+  document.getElementById('uJob').value = s.job || '';
+  document.getElementById('uStart').value = s.start || '';
+  document.getElementById('uEnd').value = s.end || '';
+  document.getElementById('uNote').value = s.note || '';
+  document.getElementById('upcomingSubmitBtn').textContent = 'Save changes';
+  document.getElementById('upcomingCancelBtn').style.display = '';
+  document.getElementById('upcomingForm').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function cancelUpcomingEdit(){
+  editingUpcomingId = null;
+  document.getElementById('upcomingForm').reset();
+  document.getElementById('upcomingSubmitBtn').textContent = 'Add shift';
+  document.getElementById('upcomingCancelBtn').style.display = 'none';
+}
+
+document.getElementById('upcomingCancelBtn').addEventListener('click', cancelUpcomingEdit);
+
+document.getElementById('upcomingForm').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  const errEl = document.getElementById('upcomingFormError');
+  errEl.classList.remove('show');
+
+  const date = document.getElementById('uDate').value;
+  const job = document.getElementById('uJob').value.trim();
+  const start = document.getElementById('uStart').value;
+  const end = document.getElementById('uEnd').value;
+  const note = document.getElementById('uNote').value.trim();
+
+  if(!date){
+    errEl.textContent = 'Enter a date.';
+    errEl.classList.add('show');
+    return;
+  }
+  if(start && end && computeHours(start, end, 0) <= 0){
+    errEl.textContent = 'End time must be after start time.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  if(!settings.upcomingShifts) settings.upcomingShifts = [];
+
+  if(editingUpcomingId){
+    const idx = settings.upcomingShifts.findIndex(s=>s.id === editingUpcomingId);
+    if(idx !== -1){
+      settings.upcomingShifts[idx] = { ...settings.upcomingShifts[idx], date, job, start, end, note };
+    }
+    await saveSettings();
+    renderUpcoming();
+    showToast('Upcoming shift updated');
+    cancelUpcomingEdit();
+    return;
+  }
+
+  settings.upcomingShifts.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    date, job, start, end, note
+  });
+  await saveSettings();
+  renderUpcoming();
+  showToast('Upcoming shift added');
+
+  document.getElementById('uJob').value = '';
+  document.getElementById('uStart').value = '';
+  document.getElementById('uEnd').value = '';
+  document.getElementById('uNote').value = '';
+  document.getElementById('uDate').focus();
+});
+
+function render(){
+  if(!loaded) return;
+  const sorted = [...entries].sort((a,b)=> b.date.localeCompare(a.date));
+
+  const now = new Date();
+  const wkStart = startOfWeek(now);
+  const monthKey = payPeriodKey(now.toISOString().slice(0,10));
+
+  let weekHours=0, weekTotal=0, monthHours=0, monthTotal=0;
+  entries.forEach(e=>{
+    const d = new Date(e.date+'T00:00:00');
+    const hours = computeHours(e.start, e.end, e.breakMin);
+    const jd = jobDefaults(e.job);
+    const rate = (e.rate !== null && e.rate !== '' && e.rate !== undefined) ? Number(e.rate) : jd.rate;
+    const pay = computePay(hours, rate, jd.otThreshold, jd.otMult);
+    const travel = computeTravel(e, jd.travelExpense);
+    const total = computeTotal(pay, travel);
+    if(d >= wkStart){ weekHours += hours; weekTotal += total; }
+    if(payPeriodKey(e.date) === monthKey){ monthHours += hours; monthTotal += total; }
+  });
+
+  document.getElementById('sumWeekHours').textContent = fmtHours(weekHours);
+  document.getElementById('sumWeekPay').textContent = fmtMoney(weekTotal);
+  document.getElementById('sumMonthHours').textContent = fmtHours(monthHours);
+  document.getElementById('sumMonthPay').textContent = fmtMoney(monthTotal);
+
+  const container = document.getElementById('tableContainer');
+  if(sorted.length === 0){
+    container.innerHTML = '<table><tbody><tr class="empty-row"><td>No shifts logged yet — add your first one above.</td></tr></tbody></table>';
+    return;
+  }
+
+  const groups = {};
+  sorted.forEach(e=>{
+    const key = isoWeekKey(e.date);
+    if(!groups[key]) groups[key] = [];
+    groups[key].push(e);
+  });
+
+  let html = '';
+  Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(key=>{
+    const rows = groups[key];
+    let gHours=0, gTotal=0;
+    const label = isoWeekLabel(rows[0].date);
+    let rowsHtml = '';
+    rows.forEach(e=>{
+      const hours = computeHours(e.start, e.end, e.breakMin);
+      const jd = jobDefaults(e.job);
+      const rate = (e.rate !== null && e.rate !== '' && e.rate !== undefined) ? Number(e.rate) : jd.rate;
+      const pay = computePay(hours, rate, jd.otThreshold, jd.otMult);
+      const travel = computeTravel(e, jd.travelExpense);
+      const total = computeTotal(pay, travel);
+      gHours += hours; gTotal += total;
+      rowsHtml += `<tr>
+        <td class="date" data-label="Date">${e.date}</td>
+        <td class="job" data-label="Job">${escapeHtml(e.job||'—')}</td>
+        <td class="num" data-label="Time">${e.start||'—'}${e.end? ' – '+e.end : ''}</td>
+        <td class="num" data-label="Break">${e.breakMin||0} min</td>
+        <td class="num" data-label="Hours">${fmtHours(hours)}</td>
+        <td class="num" data-label="Rate">${fmtMoneyAs(rate, jd.currency)}</td>
+        <td class="num pay" data-label="Pay">${fmtMoneyAs(pay, jd.currency)}</td>
+        <td class="num ${travelClass()}" data-label="Travel expenses">${fmtMoneyAs(travel, jd.currency)}</td>
+        <td class="num total" data-label="Total">${fmtMoneyAs(total, jd.currency)}</td>
+        <td class="actions-cell">
+          <button class="edit-btn" data-id="${e.id}" aria-label="Edit entry">✎</button>
+          <button class="del-btn" data-id="${e.id}" aria-label="Delete entry">&times;</button>
+        </td>
+      </tr>`;
+    });
+    html += `<div class="month-group">
+      <div class="month-header"><span>${label}</span><span class="agg">${fmtHours(gHours)} hrs &nbsp;·&nbsp; <b>${fmtMoney(gTotal)}</b></span></div>
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Job</th><th class="num">Time</th><th class="num">Break</th>
+          <th class="num">Hours</th><th class="num">Rate</th><th class="num">Pay</th>
+          <th class="num">Travel expenses</th><th class="num">Total</th><th></th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>`;
+  });
+
+  container.innerHTML = html;
+  container.querySelectorAll('.del-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.getAttribute('data-id');
+      entries = entries.filter(e=>e.id !== id);
+      if(editingEntryId === id) cancelEntryEdit();
+      await saveEntries();
+      render();
+      showToast('Entry deleted');
+    });
+  });
+  container.querySelectorAll('.edit-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.getAttribute('data-id');
+      startEntryEdit(id);
+    });
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+document.getElementById('settingsToggle').addEventListener('click', ()=>{
+  const p = document.getElementById('settingsPanel');
+  const open = p.classList.toggle('open');
+  document.getElementById('settingsToggle').setAttribute('aria-expanded', open);
+});
+
+['travelReimbursement','payrollDay'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', async (ev)=>{
+    settings.travelReimbursement = document.getElementById('travelReimbursement').checked;
+    settings.payrollDay = Number(document.getElementById('payrollDay').value) || 0;
+    await saveSettings();
+    await syncPublicWishlist();
+    await runPayrollArchive();
+    render();
+    renderWishlist();
+    renderHistory();
+  });
+});
+
+let editingWorkplaceId = null;
+
+function renderWorkplaces(){
+  const list = document.getElementById('workplacesList');
+  const wps = settings.workplaces || [];
+  populateImportWorkplaceList();
+  if(wps.length === 0){
+    list.innerHTML = '<div class="history-empty">No workplaces yet — add one below.</div>';
+  } else {
+    list.innerHTML = wps.map(w => `
+      <div class="workplace-item">
+        <span class="wp-name">${escapeHtml(w.name)}</span>
+        <span class="wp-detail">${fmtMoneyAs(w.rate, w.currency)}/hr</span>
+        <span class="wp-actions">
+          <button class="edit-btn wp-edit-btn" type="button" data-id="${w.id}" aria-label="Edit workplace">✎</button>
+          <button class="del-btn wp-del-btn" type="button" data-id="${w.id}" aria-label="Delete workplace">&times;</button>
+        </span>
+      </div>
+    `).join('');
+    list.querySelectorAll('.wp-edit-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=> openWorkplaceForm(btn.getAttribute('data-id')));
+    });
+    list.querySelectorAll('.wp-del-btn').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.getAttribute('data-id');
+        settings.workplaces = (settings.workplaces||[]).filter(w=>w.id !== id);
+        await saveSettings();
+        renderWorkplaces();
+        render();
+        renderHistory();
+        showToast('Workplace removed');
+      });
+    });
+  }
+}
+
+function openWorkplaceForm(id){
+  const form = document.getElementById('workplaceForm');
+  if(id){
+    const wp = (settings.workplaces||[]).find(w=>w.id===id);
+    if(!wp) return;
+    editingWorkplaceId = id;
+    document.getElementById('wpName').value = wp.name;
+    document.getElementById('wpRate').value = wp.rate;
+    document.getElementById('wpCurrency').value = wp.currency;
+    document.getElementById('wpOtThreshold').value = wp.otThreshold;
+    document.getElementById('wpOtMult').value = wp.otMult;
+    document.getElementById('wpTravelExpense').value = wp.travelExpense;
+  } else {
+    editingWorkplaceId = null;
+    document.getElementById('wpName').value = '';
+    document.getElementById('wpRate').value = 0;
+    document.getElementById('wpCurrency').value = settings.currency || '¥';
+    document.getElementById('wpOtThreshold').value = 8;
+    document.getElementById('wpOtMult').value = 1.0;
+    document.getElementById('wpTravelExpense').value = 0;
+  }
+  form.style.display = 'flex';
+  checkWorkplaceDuplicate();
+  document.getElementById('wpName').focus();
+}
+
+function closeWorkplaceForm(){
+  document.getElementById('workplaceForm').style.display = 'none';
+  document.getElementById('workplaceWarning').classList.remove('show');
+  editingWorkplaceId = null;
+}
+
+function checkWorkplaceDuplicate(){
+  const name = document.getElementById('wpName').value.trim().toLowerCase();
+  const warning = document.getElementById('workplaceWarning');
+  const match = (settings.workplaces||[]).some(w => w.name.trim().toLowerCase() === name);
+  warning.classList.toggle('show', !!(name && match));
+}
+
+function readWorkplaceForm(){
+  return {
+    name: document.getElementById('wpName').value.trim(),
+    rate: Number(document.getElementById('wpRate').value) || 0,
+    currency: document.getElementById('wpCurrency').value,
+    otThreshold: Number(document.getElementById('wpOtThreshold').value) || 0,
+    otMult: Number(document.getElementById('wpOtMult').value) || 1,
+    travelExpense: Number(document.getElementById('wpTravelExpense').value) || 0
+  };
+}
+
+async function upsertWorkplace(){
+  const data = readWorkplaceForm();
+  if(!data.name){ showToast('Enter a workplace name'); return null; }
+  if(!settings.workplaces) settings.workplaces = [];
+  const nameLower = data.name.toLowerCase();
+  let existing = settings.workplaces.find(w => w.id === editingWorkplaceId)
+    || settings.workplaces.find(w => w.name.trim().toLowerCase() === nameLower);
+  if(existing){
+    Object.assign(existing, data);
+  } else {
+    existing = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), ...data };
+    settings.workplaces.push(existing);
+  }
+  await saveSettings();
+  return existing;
+}
+
+document.getElementById('addWorkplaceBtn').addEventListener('click', ()=> openWorkplaceForm(null));
+document.getElementById('wpCancel').addEventListener('click', closeWorkplaceForm);
+document.getElementById('wpName').addEventListener('input', checkWorkplaceDuplicate);
+
+document.getElementById('wpSaveFuture').addEventListener('click', async ()=>{
+  const wp = await upsertWorkplace();
+  if(!wp) return;
+  renderWorkplaces();
+  render();
+  renderHistory();
+  closeWorkplaceForm();
+  showToast('Workplace saved');
+});
+
+document.getElementById('wpSaveOverride').addEventListener('click', async ()=>{
+  const wp = await upsertWorkplace();
+  if(!wp) return;
+  const nameLower = wp.name.trim().toLowerCase();
+  let count = 0;
+  entries.forEach(e=>{
+    if((e.job||'').trim().toLowerCase() === nameLower){
+      e.rate = null; e.travelExpense = null; count++;
+    }
+  });
+  history.forEach(h=>{
+    h.entries.forEach(e=>{
+      if((e.job||'').trim().toLowerCase() === nameLower){
+        e.rate = null; e.travelExpense = null; count++;
+      }
+    });
+  });
+  await saveEntries();
+  await saveHistory();
+  renderWorkplaces();
+  render();
+  renderHistory();
+  closeWorkplaceForm();
+  showToast(count > 0 ? `Workplace saved — updated ${count} past entr${count===1?'y':'ies'}` : 'Workplace saved');
+});
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+function startEntryEdit(id){
+  const entry = entries.find(e=>e.id === id);
+  if(!entry) return;
+  editingEntryId = id;
+  document.getElementById('fDate').value = entry.date;
+  document.getElementById('fJob').value = entry.job || '';
+  document.getElementById('fStart').value = entry.start || '';
+  document.getElementById('fEnd').value = entry.end || '';
+  document.getElementById('fBreak').value = entry.breakMin || 0;
+  document.getElementById('fRate').value = (entry.rate === null || entry.rate === undefined) ? '' : entry.rate;
+  document.getElementById('fTravel').value = (entry.travelExpense === null || entry.travelExpense === undefined) ? '' : entry.travelExpense;
+  document.getElementById('entrySubmitBtn').textContent = 'Save changes';
+  document.getElementById('entryCancelBtn').style.display = '';
+  document.getElementById('entryForm').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function cancelEntryEdit(){
+  editingEntryId = null;
+  document.getElementById('entryForm').reset();
+  document.getElementById('fBreak').value = '0';
+  document.getElementById('fDate').valueAsDate = new Date();
+  document.getElementById('entrySubmitBtn').textContent = 'Add entry';
+  document.getElementById('entryCancelBtn').style.display = 'none';
+}
+
+document.getElementById('entryCancelBtn').addEventListener('click', cancelEntryEdit);
+
+document.getElementById('entryForm').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  const errEl = document.getElementById('formError');
+  errEl.classList.remove('show');
+
+  const date = document.getElementById('fDate').value;
+  const job = document.getElementById('fJob').value.trim();
+  const start = document.getElementById('fStart').value;
+  const end = document.getElementById('fEnd').value;
+  const breakMin = document.getElementById('fBreak').value;
+  const rateRaw = document.getElementById('fRate').value;
+  const travelRaw = document.getElementById('fTravel').value;
+
+  if(!date){
+    errEl.textContent = 'Enter a date first.';
+    errEl.classList.add('show');
+    return;
+  }
+  if(!start || !end){
+    errEl.textContent = 'Enter a start and end time.';
+    errEl.classList.add('show');
+    return;
+  }
+  const hours = computeHours(start, end, breakMin);
+  if(hours <= 0){
+    errEl.textContent = 'End time must be after start time (accounting for breaks).';
+    errEl.classList.add('show');
+    return;
+  }
+
+  if(editingEntryId){
+    const idx = entries.findIndex(e=>e.id === editingEntryId);
+    if(idx !== -1){
+      entries[idx] = {
+        ...entries[idx],
+        date, job, start, end,
+        breakMin: Number(breakMin)||0,
+        rate: rateRaw === '' ? null : Number(rateRaw),
+        travelExpense: travelRaw === '' ? null : Number(travelRaw)
+      };
+    }
+    await saveEntries();
+    render();
+    showToast('Shift updated');
+    cancelEntryEdit();
+    return;
+  }
+
+  const entry = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    date, job, start, end,
+    breakMin: Number(breakMin)||0,
+    rate: rateRaw === '' ? null : Number(rateRaw),
+    travelExpense: travelRaw === '' ? null : Number(travelRaw)
+  };
+  entries.push(entry);
+  await saveEntries();
+  render();
+  showToast('Shift added');
+
+  document.getElementById('fJob').value = '';
+  document.getElementById('fStart').value = '';
+  document.getElementById('fEnd').value = '';
+  document.getElementById('fBreak').value = '0';
+  document.getElementById('fRate').value = '';
+  document.getElementById('fTravel').value = '';
+  document.getElementById('fDate').focus();
+});
+
+document.getElementById('exportCsv').addEventListener('click', ()=>{
+  if(entries.length === 0){ showToast('Nothing to export yet'); return; }
+  const rows = [['Date','Job','Start','End','Break (min)','Hours','Rate','Currency','Pay','Travel expenses','Total']];
+  [...entries].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>{
+    const hours = computeHours(e.start, e.end, e.breakMin);
+    const jd = jobDefaults(e.job);
+    const rate = (e.rate !== null && e.rate !== undefined && e.rate !== '') ? Number(e.rate) : jd.rate;
+    const pay = computePay(hours, rate, jd.otThreshold, jd.otMult);
+    const travel = computeTravel(e, jd.travelExpense);
+    const total = computeTotal(pay, travel);
+    rows.push([e.date, e.job||'', e.start||'', e.end||'', e.breakMin||0, fmtHours(hours), rate, jd.currency, pay.toFixed(2), travel.toFixed(2), total.toFixed(2)]);
+  });
+  const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'work-hours.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('clearAll').addEventListener('click', async ()=>{
+  if(entries.length === 0) return;
+  if(!confirm('Delete all logged entries? This cannot be undone.')) return;
+  entries = [];
+  await saveEntries();
+  render();
+  showToast('All entries cleared');
+});
+
+function renderWishlist(){
+  if(!loaded) return;
+  const container = document.getElementById('wishlistContainer');
+  if(wishlist.length === 0){
+    container.innerHTML = '<div class="wish-empty">Nothing on your wishlist yet.</div>';
+    return;
+  }
+  const rate = settings.rate;
+  const sorted = [...wishlist].sort((a,b)=>a.price-b.price);
+  let html = '';
+  if(!rate || rate <= 0){
+    html += '<div class="rate-note">Set a default hourly rate above to see hours-of-work equivalents.</div>';
+  }
+  sorted.forEach(item=>{
+    const hours = rate > 0 ? item.price / rate : null;
+    const nameHtml = item.url
+      ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.name)}</a>`
+      : escapeHtml(item.name);
+    html += `<div class="wish-card${item.purchased ? ' purchased' : ''}">
+      <input type="checkbox" class="w-check" data-id="${item.id}" aria-label="Mark as purchased" ${item.purchased ? 'checked' : ''}>
+      <div class="w-name">${nameHtml}</div>
+      <div class="w-price">${fmtMoney(item.price)}</div>
+      <div class="w-hours">${hours!==null ? `<span class="tag">hours needed</span>${fmtHours(hours)}` : '—'}</div>
+      <div class="wish-actions">
+        <button class="edit-btn" data-id="${item.id}" aria-label="Edit item">✎</button>
+        <button class="del-btn" data-id="${item.id}" aria-label="Remove item">&times;</button>
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+  container.querySelectorAll('.w-check').forEach(cb=>{
+    cb.addEventListener('change', async ()=>{
+      const id = cb.getAttribute('data-id');
+      const item = wishlist.find(w=>w.id === id);
+      if(item){
+        item.purchased = cb.checked;
+        await saveWishlist();
+        renderWishlist();
+      }
+    });
+  });
+  container.querySelectorAll('.del-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.getAttribute('data-id');
+      wishlist = wishlist.filter(w=>w.id !== id);
+      if(editingWishId === id) cancelWishEdit();
+      await saveWishlist();
+      renderWishlist();
+      showToast('Removed from wishlist');
+    });
+  });
+  container.querySelectorAll('.edit-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.getAttribute('data-id');
+      startWishEdit(id);
+    });
+  });
+}
+
+function startWishEdit(id){
+  const item = wishlist.find(w=>w.id === id);
+  if(!item) return;
+  editingWishId = id;
+  document.getElementById('wName').value = item.name || '';
+  document.getElementById('wPrice').value = item.price;
+  document.getElementById('wUrl').value = item.url || '';
+  document.getElementById('wishSubmitBtn').textContent = 'Save changes';
+  document.getElementById('wishCancelBtn').style.display = '';
+  document.getElementById('wishForm').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function cancelWishEdit(){
+  editingWishId = null;
+  document.getElementById('wishForm').reset();
+  document.getElementById('wishSubmitBtn').textContent = 'Add to wishlist';
+  document.getElementById('wishCancelBtn').style.display = 'none';
+}
+
+document.getElementById('wishCancelBtn').addEventListener('click', cancelWishEdit);
+
+document.getElementById('wishlistPrivate').addEventListener('change', async ()=>{
+  settings.wishlistPrivate = document.getElementById('wishlistPrivate').checked;
+  await saveSettings();
+  await syncPublicWishlist();
+});
+
+document.getElementById('shareWishlistBtn').addEventListener('click', async ()=>{
+  if(!currentUser) return;
+  await syncPublicWishlist();
+  const link = `${window.location.origin}${window.location.pathname}?wishlist=${currentUser.id}`;
+  try{
+    await navigator.clipboard.writeText(link);
+    showToast(settings.wishlistPrivate !== false
+      ? 'Link copied — turn off "keep wishlist private" below so others can view it'
+      : 'Share link copied to clipboard');
+  }catch(e){
+    window.prompt('Copy this link to share your wishlist:', link);
+  }
+});
+
+document.getElementById('wishForm').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  const errEl = document.getElementById('wishFormError');
+  errEl.classList.remove('show');
+
+  const name = document.getElementById('wName').value.trim();
+  const price = document.getElementById('wPrice').value;
+  const url = document.getElementById('wUrl').value.trim();
+
+  if(!name){
+    errEl.textContent = 'Enter an item name.';
+    errEl.classList.add('show');
+    return;
+  }
+  if(price === '' || Number(price) <= 0){
+    errEl.textContent = 'Enter a price greater than 0.';
+    errEl.classList.add('show');
+    return;
+  }
+  if(url && !/^https?:\/\//i.test(url)){
+    errEl.textContent = 'Link should start with http:// or https://';
+    errEl.classList.add('show');
+    return;
+  }
+
+  if(editingWishId){
+    const idx = wishlist.findIndex(w=>w.id === editingWishId);
+    if(idx !== -1){
+      wishlist[idx] = { ...wishlist[idx], name, price: Number(price), url };
+    }
+    await saveWishlist();
+    renderWishlist();
+    showToast('Wishlist item updated');
+    cancelWishEdit();
+    return;
+  }
+
+  wishlist.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    name, price: Number(price), url, purchased: false
+  });
+  await saveWishlist();
+  renderWishlist();
+  showToast('Added to wishlist');
+
+  document.getElementById('wName').value = '';
+  document.getElementById('wPrice').value = '';
+  document.getElementById('wUrl').value = '';
+  document.getElementById('wName').focus();
+});
+
+document.getElementById('fDate').valueAsDate = new Date();
+
+// ---- Auth flow ----
+function showAuthScreen(){
+  document.getElementById('authScreen').style.display = 'block';
+  document.getElementById('appRoot').style.display = 'none';
+}
+async function showApp(user){
+  currentUser = user;
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'block';
+  document.getElementById('whoAmI').textContent = user.email;
+  document.getElementById('whoAmI').title = user.email;
+  loaded = false;
+  await loadData();
+}
+
+function setAuthError(msg){
+  const el = document.getElementById('authError');
+  if(msg){ el.textContent = msg; el.classList.add('show'); }
+  else { el.textContent = ''; el.classList.remove('show'); }
+}
+
+document.getElementById('authForm').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  setAuthError('');
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if(error){ setAuthError(error.message); return; }
+  showApp(data.user);
+});
+
+document.getElementById('authSignUp').addEventListener('click', async ()=>{
+  setAuthError('');
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  if(!email || !password || password.length < 6){
+    setAuthError('Enter an email and a password of at least 6 characters.');
+    return;
+  }
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if(error){ setAuthError(error.message); return; }
+  if(data.session){
+    showApp(data.user);
+  } else {
+    setAuthError('Account created — check your email to confirm, then sign in.');
+  }
+});
+
+document.getElementById('signOutBtn').addEventListener('click', async ()=>{
+  await supabaseClient.auth.signOut();
+  currentUser = null;
+  loaded = false;
+  entries = []; wishlist = []; history = []; settings = { rate: 0, currency: '¥', otThreshold: 8, otMult: 1.0, travelExpense: 0, travelReimbursement: true, payrollDay: 0, lastPayrollRun: '', wishlistPrivate: true, workplaces: [], weeklyPlan: {}, schoolSchedule: {}, buses: [], upcomingShifts: [] };
+  plannerWeekOffset = 0;
+  plannerFormOpenFor = null;
+  schoolFormOpenFor = null;
+  editingBusId = null;
+  editingUpcomingId = null;
+  showAuthScreen();
+});
+
+async function showPublicWishlist(userId){
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'none';
+  const screen = document.getElementById('publicWishlistScreen');
+  screen.style.display = 'block';
+  screen.innerHTML = '<div class="public-message">Loading…</div>';
+  try{
+    const { data, error } = await supabaseClient
+      .from('wishlist_public')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if(error) throw error;
+
+    if(!data){
+      screen.innerHTML = '<div class="public-message">Wishlist not found.</div>';
+      return;
+    }
+    if(data.wishlist_private){
+      screen.innerHTML = '<div class="public-message">This wishlist is private.</div>';
+      return;
+    }
+
+    const items = (data.wishlist || []).filter(item => !item.purchased);
+    if(items.length === 0){
+      screen.innerHTML = '<div class="public-title">Wishlist</div><div class="public-message" style="margin-top:20px;font-size:15px;">Nothing here right now.</div>';
+      return;
+    }
+
+    let html = `<div class="public-title">Wishlist</div>
+      <div class="public-sub">Items already purchased or received aren't shown.</div>`;
+    [...items].sort((a,b)=>a.price-b.price).forEach(item=>{
+      const nameHtml = item.url
+        ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.name)}</a>`
+        : escapeHtml(item.name);
+      html += `<div class="public-wish-card">
+        <div class="w-name">${nameHtml}</div>
+        <div class="w-price">${fmtMoneyAs(item.price, data.currency)}</div>
+      </div>`;
+    });
+    screen.innerHTML = html;
+  }catch(e){
+    screen.innerHTML = '<div class="public-message">Could not load this wishlist.</div>';
+  }
+}
+
+(async function initAuth(){
+  const urlParams = new URLSearchParams(window.location.search);
+  const sharedUserId = urlParams.get('wishlist');
+  if(sharedUserId){
+    await showPublicWishlist(sharedUserId);
+    return;
+  }
+  const { data } = await supabaseClient.auth.getSession();
+  if(data && data.session){
+    showApp(data.session.user);
+  } else {
+    showAuthScreen();
+  }
+})();
+</script>
+</body>
+</html>
